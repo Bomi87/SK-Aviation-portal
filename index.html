@@ -365,58 +365,68 @@
   </div>
 
   <script>
-    const tools = [
-      {
-        id: 'fbo-search',
-        name: 'FBO Search',
-        description: '공항별 FBO 및 연락처 조회.',
-        category: 'FBO',
-        icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.11.37 2.3.56 3.58.56a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.07 21 3 13.93 3 5a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.28.19 2.47.56 3.58a1 1 0 0 1-.24 1.01l-2.2 2.2Z" fill="#ec4899"/></svg>',
-        tags: ['FBO', 'airport', 'ops'],
-        updated: '2026-04-10',
-        url: 'https://bomi87.github.io/FBO/'
-      },
-      {
-        id: 'currency-checker',
-        name: 'Currency Checker',
-        description: '승무원 및 운항 관련 currency 상태 조회.',
-        category: 'Crew',
-        icon: '✅',
-        tags: ['currency', 'crew', 'status'],
-        updated: '2026-04-10',
-        url: 'https://bomi87.github.io/Currency/'
-      },
-      {
-        id: 'hl8080-route',
-        name: 'HL8080 Route',
-        description:  'HL8080 항공기 Route 및 Tracking.\n(Waypoint detail Click & NDB 버튼 on/off 설정 가능)',
-        category: 'Tracking',
-        icon: '🛫',
-        tags: ['HL8080', 'route', 'tracking'],
-        updated: '2026-04-10',
-        url: 'https://bomi87.github.io/FLIGHT_MAP/?file=live/HL8080.kml&v=1&hexs=71C080,71C372,71C550,71C290,71C299,71BA27,71C508,71C230,71C068,71C222'
-      },
-      {
-        id: 'hl8372-route',
-        name: 'HL8372 Route',
-     description:  'HL8372 항공기 Route 및 Tracking.\n(Waypoint detail Click & NDB 버튼 on/off 설정 가능)',
-        category: 'Tracking',
-        icon: '🛫',
-        tags: ['HL8372', 'route', 'tracking'],
-        updated: '2026-04-10',
-        url: 'https://bomi87.github.io/FLIGHT_MAP/?file=live/HL8372.kml&v=1&hexs=71C080,71C372,71C550,71C290,71C299,71BA27,71C508,71C230,71C068,71C222'
-      },
-      {
-        id: 'hospital-search',
-        name: 'Hospital Search',
-        description: '공항 주변 병원 조회.\n(대학병원, 종합병원 우선 조회)',
-        category: 'Medical',
-        icon: '🏥',
-        tags: ['hospital', 'medical', 'search'],
-        updated: '2026-04-10',
-        url: 'https://bomi87.github.io/Hospital/'
-      }
-    ];
+const tools = [
+  {
+    id: 'currency-checker',
+    name: 'Currency Checker',
+    description: '승무원 및 운항 관련 currency 상태 조회.',
+    category: 'Crew',
+    icon: '✅',
+    tags: ['currency', 'crew', 'status'],
+    updated: '2026-04-10',
+    url: 'https://bomi87.github.io/Currency/'
+  },
+  {
+    id: 'fbo-search',
+    name: 'FBO Search',
+    description: '공항별 FBO 및 연락처 조회.',
+    category: 'Airport',
+    icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.11.37 2.3.56 3.58.56a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.07 21 3 13.93 3 5a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.28.19 2.47.56 3.58a1 1 0 0 1-.24 1.01l-2.2 2.2Z" fill="#ec4899"/></svg>',
+    tags: ['FBO', 'airport', 'ops'],
+    updated: '2026-04-10',
+    url: 'https://bomi87.github.io/FBO/'
+  },
+  {
+    id: 'factsheet',
+    name: 'FACTSHEET',
+    description: '공항별 FACT SHEET PDF 조회.',
+    category: 'Airport',
+    icon: '📄',
+    tags: ['factsheet', 'airport', 'pdf'],
+    updated: '2026-04-10',
+    url: 'https://bomi87.github.io/FACTSHEET/'
+  },
+  {
+    id: 'hl8080-route',
+    name: 'HL8080 Route',
+    description: 'HL8080 항공기 Route 및 Tracking.\n(Waypoint detail Click & NDB 버튼 on/off 설정 가능)',
+    category: 'Tracking',
+    icon: '🛫',
+    tags: ['HL8080', 'route', 'tracking'],
+    updated: '2026-04-10',
+    url: 'https://bomi87.github.io/FLIGHT_MAP/?file=live/HL8080.kml&v=1&hexs=71C080,71C372,71C550,71C290,71C299,71BA27,71C508,71C230,71C068,71C222'
+  },
+  {
+    id: 'hl8372-route',
+    name: 'HL8372 Route',
+    description: 'HL8372 항공기 Route 및 Tracking.\n(Waypoint detail Click & NDB 버튼 on/off 설정 가능)',
+    category: 'Tracking',
+    icon: '🛫',
+    tags: ['HL8372', 'route', 'tracking'],
+    updated: '2026-04-10',
+    url: 'https://bomi87.github.io/FLIGHT_MAP/?file=live/HL8372.kml&v=1&hexs=71C080,71C372,71C550,71C290,71C299,71BA27,71C508,71C230,71C068,71C222'
+  },
+  {
+    id: 'hospital-search',
+    name: 'Hospital Search',
+    description: '공항 주변 병원 조회.\n(대학병원, 종합병원 우선 조회)',
+    category: 'Medical',
+    icon: '🏥',
+    tags: ['hospital', 'medical', 'search'],
+    updated: '2026-04-10',
+    url: 'https://bomi87.github.io/Hospital/'
+  }
+];
 
     const searchInput = document.getElementById('searchInput');
     const categorySelect = document.getElementById('categorySelect');
@@ -460,16 +470,16 @@
       setTheme(localStorage.getItem(THEME_KEY) || 'light');
     }
 
-    function categories() {
-      const preferredOrder = ['Crew', 'FBO', 'Tracking', 'Medical'];
-      const existing = [...new Set(tools.map(t => t.category))];
-      return preferredOrder.filter(cat => existing.includes(cat));
-    }
+  function categories() {
+  const preferredOrder = ['Crew', 'Airport', 'Tracking', 'Medical'];
+  const existing = [...new Set(tools.map(t => t.category))];
+  return preferredOrder.filter(cat => existing.includes(cat));
+}
 
     function populateCategoryControls() {
       const cats = categories();
-      categorySelect.innerHTML = '<option value="all">All Categories</option>' +
-        cats.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+ categorySelect.innerHTML = '<option value="all">All</option>' +
+  cats.map(cat => `<option value="${cat}">${cat}</option>`).join('');
 
       categoryChips.innerHTML = [
         '<button class="chip active" data-category="all">All</button>',
