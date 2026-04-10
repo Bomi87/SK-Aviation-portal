@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BOMI Operations Portal</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --panel-2: #f8fafc;
+      --text: #17202a;
+      --muted: #667085;
+      --line: #e6ebf2;
+      --primary: #2563eb;
+      --primary-soft: #dbeafe;
+      --shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+    }
+    body.dark {
+      --bg: #0b1220;
+      --panel: #111827;
+      --panel-2: #0f172a;
+      --text: #e5ecf6;
+      --muted: #94a3b8;
+      --line: #233044;
+      --primary: #60a5fa;
+      --primary-soft: rgba(96, 165, 250, 0.16);
+      --shadow: 0 14px 32px rgba(0, 0, 0, 0.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: 1.35fr 0.65fr;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+    .card, .tool-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .card { padding: 24px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: 32px;
+      line-height: 1.2;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
+    .hero-actions, .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .btn, .chip, .icon-btn, input, select {
+      font: inherit;
+    }
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 11px 14px;
+      cursor: pointer;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-soft {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .stat {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+    .stat .k { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+    .stat .v { font-size: 28px; font-weight: 800; }
+    .controls {
+      display: grid;
+      grid-template-columns: 1.2fr 0.9fr auto auto;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .field input, .field select {
+      width: 100%;
+      height: 48px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 0 14px;
+      outline: none;
+    }
+    .icon-btn {
+      width: 48px;
+      height: 48px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 14px;
+      cursor: pointer;
+    }
+    .chip {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .chip.active {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border-color: transparent;
+    }
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 18px 0 12px;
+    }
+    .section-title { font-size: 20px; font-weight: 800; margin: 0; }
+    .section-meta { color: var(--muted); font-size: 13px; }
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .tool-card {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      min-height: 240px;
+    }
+    .tool-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .icon {
+      width: 48px;
+      height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      background: var(--primary-soft);
+      font-size: 24px;
+    }
+    .fav-btn {
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      font-size: 22px;
+      line-height: 1;
+      padding: 0;
+    }
+    .tool-title { margin: 0 0 6px; font-size: 20px; font-weight: 800; }
+    .tool-desc {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+      margin-bottom: 14px;
+      min-height: 64px;
+    }
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .badge {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--muted);
+    }
+    .badge.category {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border-color: transparent;
+    }
+    .tool-footer {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .updated { color: var(--muted); font-size: 12px; }
+    .empty {
+      display: none;
+      padding: 26px;
+      text-align: center;
+      border: 1px dashed var(--line);
+      border-radius: 18px;
+      color: var(--muted);
+      background: var(--panel);
+    }
+    .footer {
+      color: var(--muted);
+      text-align: center;
+      padding: 24px 0 8px;
+      font-size: 13px;
+    }
+    code {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 2px 6px;
+    }
+    @media (max-width: 980px) {
+      .hero { grid-template-columns: 1fr; }
+      .controls { grid-template-columns: 1fr 1fr auto auto; }
+      .tool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 680px) {
+      .wrap { padding: 14px; }
+      h1 { font-size: 26px; }
+      .controls { grid-template-columns: 1fr; }
+      .tool-grid { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: 1fr 1fr; }
+      .tool-card { min-height: unset; }
+      .tool-desc { min-height: unset; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="card">
+        <div class="eyebrow">✈️ BOMI Tools</div>
+        <h1>Operations Tool Portal</h1>
+        <div class="sub">
+          기존에 만든 GitHub Pages 프로그램들을 한 공간에서 모아보는 통합 포털입니다.
+          검색, 카테고리 필터, 즐겨찾기, 다크모드를 지원합니다.
+        </div>
+        <div class="hero-actions">
+          <button class="btn btn-primary" id="openFavoritesBtn">⭐ Favorites Only</button>
+          <button class="btn btn-soft" id="resetFavoritesBtn">↺ Reset Favorites</button>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="k">Total Tools</div><div class="v" id="totalTools">0</div></div>
+        <div class="stat"><div class="k">Favorite Tools</div><div class="v" id="favoriteTools">0</div></div>
+        <div class="stat"><div class="k">Categories</div><div class="v" id="totalCategories">0</div></div>
+        <div class="stat"><div class="k">Theme</div><div class="v" id="themeLabel">Light</div></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="controls">
+        <div class="field"><input type="text" id="searchInput" placeholder="툴 이름, 설명, 태그 검색" /></div>
+        <div class="field">
+          <select id="categorySelect">
+            <option value="all">All Categories</option>
+          </select>
+        </div>
+        <button class="icon-btn" id="themeToggle" title="테마 변경">🌙</button>
+        <button class="icon-btn" id="clearFilters" title="필터 초기화">🧹</button>
+      </div>
+      <div class="chips" id="categoryChips"></div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2 class="section-title">My Tools</h2>
+        <div class="section-meta" id="resultMeta">0 items</div>
+      </div>
+      <div class="tool-grid" id="toolGrid"></div>
+      <div class="empty" id="emptyState">조건에 맞는 툴이 없습니다.</div>
+    </section>
+
+    <div class="footer">
+      GitHub Pages용 단일 포털 파일 · 이 파일을 <code>index.html</code>로 올리면 됩니다.
+    </div>
+  </div>
+
+  <script>
+    const tools = [
+      {
+        id: 'fbo-search',
+        name: 'FBO Search',
+        description: '공항별 FBO 정보 조회 및 연락처 확인 툴.',
+        category: 'Operations',
+        icon: '📞',
+        tags: ['FBO', 'airport', 'ops'],
+        updated: '2026-04-10',
+        url: 'https://bomi87.github.io/FBO/'
+      },
+      {
+        id: 'currency-checker',
+        name: 'Currency Checker',
+        description: '승무원 및 운항 관련 currency 상태 조회 툴.',
+        category: 'Crew',
+        icon: '✅',
+        tags: ['currency', 'crew', 'status'],
+        updated: '2026-04-10',
+        url: 'https://bomi87.github.io/Currency/'
+      },
+      {
+        id: 'hl8080-route',
+        name: 'HL8080 Route',
+        description: 'HL8080 항공기 라우트 및 트래킹 시각화 화면.',
+        category: 'Tracking',
+        icon: '🛫',
+        tags: ['HL8080', 'route', 'tracking'],
+        updated: '2026-04-10',
+        url: 'https://bomi87.github.io/FLIGHT_MAP/?file=live/HL8080.kml&v=1&hexs=71C080,71C372,71C550,71C290,71C299,71BA27,71C508,71C230,71C068,71C222'
+      },
+      {
+        id: 'hl8372-route',
+        name: 'HL8372 Route',
+        description: 'HL8372 항공기 라우트 및 트래킹 시각화 화면.',
+        category: 'Tracking',
+        icon: '🛰️',
+        tags: ['HL8372', 'route', 'tracking'],
+        updated: '2026-04-10',
+        url: 'https://bomi87.github.io/FLIGHT_MAP/?file=live/HL8372.kml&v=1&hexs=71C080,71C372,71C550,71C290,71C299,71BA27,71C508,71C230,71C068,71C222'
+      },
+      {
+        id: 'hospital-search',
+        name: 'Hospital Search',
+        description: '공항 주변 종합병원 및 대학병원 검색 툴.',
+        category: 'Medical',
+        icon: '🏥',
+        tags: ['hospital', 'medical', 'search'],
+        updated: '2026-04-10',
+        url: 'https://bomi87.github.io/Hospital/'
+      }
+    ];
+
+    const searchInput = document.getElementById('searchInput');
+    const categorySelect = document.getElementById('categorySelect');
+    const categoryChips = document.getElementById('categoryChips');
+    const toolGrid = document.getElementById('toolGrid');
+    const emptyState = document.getElementById('emptyState');
+    const resultMeta = document.getElementById('resultMeta');
+    const themeToggle = document.getElementById('themeToggle');
+    const clearFiltersBtn = document.getElementById('clearFilters');
+    const openFavoritesBtn = document.getElementById('openFavoritesBtn');
+    const resetFavoritesBtn = document.getElementById('resetFavoritesBtn');
+    const totalToolsEl = document.getElementById('totalTools');
+    const favoriteToolsEl = document.getElementById('favoriteTools');
+    const totalCategoriesEl = document.getElementById('totalCategories');
+    const themeLabelEl = document.getElementById('themeLabel');
+
+    const FAVORITE_KEY = 'toolPortalFavorites';
+    const THEME_KEY = 'toolPortalTheme';
+
+    let favorites = loadFavorites();
+    let activeCategory = 'all';
+    let favoritesOnly = false;
+
+    function loadFavorites() {
+      try { return JSON.parse(localStorage.getItem(FAVORITE_KEY) || '[]'); }
+      catch { return []; }
+    }
+
+    function saveFavorites() {
+      localStorage.setItem(FAVORITE_KEY, JSON.stringify(favorites));
+    }
+
+    function toggleFavorite(id) {
+      if (favorites.includes(id)) favorites = favorites.filter(v => v !== id);
+      else favorites.push(id);
+      saveFavorites();
+      updateStats();
+      renderTools();
+    }
+
+    function setTheme(theme) {
+      document.body.classList.toggle('dark', theme === 'dark');
+      localStorage.setItem(THEME_KEY, theme);
+      themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+      themeLabelEl.textContent = theme === 'dark' ? 'Dark' : 'Light';
+    }
+
+    function initTheme() {
+      setTheme(localStorage.getItem(THEME_KEY) || 'light');
+    }
+
+    function categories() {
+      return [...new Set(tools.map(t => t.category))].sort();
+    }
+
+    function populateCategoryControls() {
+      const cats = categories();
+      categorySelect.innerHTML = '<option value="all">All Categories</option>' +
+        cats.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+
+      categoryChips.innerHTML = [
+        '<button class="chip active" data-category="all">All</button>',
+        ...cats.map(cat => `<button class="chip" data-category="${cat}">${cat}</button>`)
+      ].join('');
+
+      categoryChips.querySelectorAll('.chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          activeCategory = chip.dataset.category;
+          categorySelect.value = activeCategory;
+          updateActiveChips();
+          renderTools();
+        });
+      });
+    }
+
+    function updateActiveChips() {
+      categoryChips.querySelectorAll('.chip').forEach(chip => {
+        chip.classList.toggle('active', chip.dataset.category === activeCategory);
+      });
+    }
+
+    function filteredTools() {
+      const q = searchInput.value.trim().toLowerCase();
+      return tools.filter(tool => {
+        const matchCategory = activeCategory === 'all' || tool.category === activeCategory;
+        const matchSearch = !q || [tool.name, tool.description, tool.category, ...(tool.tags || [])]
+          .join(' ').toLowerCase().includes(q);
+        const matchFavorites = !favoritesOnly || favorites.includes(tool.id);
+        return matchCategory && matchSearch && matchFavorites;
+      });
+    }
+
+    function renderTools() {
+      const items = filteredTools();
+      const sorted = [...items].sort((a, b) => {
+        const af = favorites.includes(a.id) ? 1 : 0;
+        const bf = favorites.includes(b.id) ? 1 : 0;
+        return bf - af || a.name.localeCompare(b.name);
+      });
+
+      toolGrid.innerHTML = sorted.map(tool => {
+        const isFav = favorites.includes(tool.id);
+        return `
+          <article class="tool-card">
+            <div class="tool-top">
+              <div class="icon">${tool.icon || '🧩'}</div>
+              <button class="fav-btn" onclick="toggleFavorite('${tool.id}')" title="즐겨찾기">${isFav ? '⭐' : '☆'}</button>
+            </div>
+            <div>
+              <h3 class="tool-title">${tool.name}</h3>
+              <div class="tool-desc">${tool.description}</div>
+              <div class="badges">
+                <span class="badge category">${tool.category}</span>
+                ${(tool.tags || []).map(tag => `<span class="badge">#${tag}</span>`).join('')}
+              </div>
+            </div>
+            <div class="tool-footer">
+              <div class="updated">Updated ${tool.updated}</div>
+              <a class="btn btn-primary" href="${tool.url}" target="_blank" rel="noopener noreferrer">Open</a>
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      emptyState.style.display = sorted.length ? 'none' : 'block';
+      resultMeta.textContent = `${sorted.length} items`;
+    }
+
+    function updateStats() {
+      totalToolsEl.textContent = tools.length;
+      favoriteToolsEl.textContent = favorites.length;
+      totalCategoriesEl.textContent = categories().length;
+    }
+
+    searchInput.addEventListener('input', renderTools);
+    categorySelect.addEventListener('change', () => {
+      activeCategory = categorySelect.value;
+      updateActiveChips();
+      renderTools();
+    });
+    themeToggle.addEventListener('click', () => {
+      setTheme(document.body.classList.contains('dark') ? 'light' : 'dark');
+    });
+    clearFiltersBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      categorySelect.value = 'all';
+      activeCategory = 'all';
+      favoritesOnly = false;
+      openFavoritesBtn.textContent = '⭐ Favorites Only';
+      updateActiveChips();
+      renderTools();
+    });
+    openFavoritesBtn.addEventListener('click', () => {
+      favoritesOnly = !favoritesOnly;
+      openFavoritesBtn.textContent = favoritesOnly ? '📂 Show All Tools' : '⭐ Favorites Only';
+      renderTools();
+    });
+    resetFavoritesBtn.addEventListener('click', () => {
+      favorites = [];
+      saveFavorites();
+      updateStats();
+      renderTools();
+    });
+
+    populateCategoryControls();
+    initTheme();
+    updateStats();
+    renderTools();
+    window.toggleFavorite = toggleFavorite;
+  </script>
+</body>
+</html>
