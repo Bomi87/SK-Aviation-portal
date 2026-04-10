@@ -40,6 +40,50 @@
       margin: 0 auto;
       padding: 24px;
     }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+      padding: 16px 18px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+    .brand-logo {
+      width: 52px;
+      height: 52px;
+      object-fit: contain;
+      border-radius: 14px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      padding: 6px;
+      flex: 0 0 auto;
+    }
+    .brand-text {
+      min-width: 0;
+    }
+    .brand-title {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+    .brand-sub {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
     .hero {
       display: grid;
       grid-template-columns: 1.35fr 0.65fr;
@@ -265,6 +309,16 @@
     @media (max-width: 680px) {
       .wrap { padding: 14px; }
       h1 { font-size: 26px; }
+      .topbar {
+        padding: 14px;
+      }
+      .brand-title {
+        font-size: 20px;
+      }
+      .brand-logo {
+        width: 46px;
+        height: 46px;
+      }
       .controls { grid-template-columns: 1fr; }
       .tool-grid { grid-template-columns: 1fr; }
       .stats { grid-template-columns: 1fr 1fr; }
@@ -275,15 +329,25 @@
 </head>
 <body>
   <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <img src="SK_LOGO.png" alt="SK Aviation logo" class="brand-logo" />
+        <div class="brand-text">
+          <h1 class="brand-title">SK-Aviation Programs</h1>
+          <div class="brand-sub">GitHub Pages 기반 통합 프로그램 포털</div>
+        </div>
+      </div>
+      <button class="icon-btn" id="themeToggle" title="테마 변경">🌙</button>
+    </div>
+
     <section>
       <div class="controls">
-        <div class="field"><input type="text" id="searchInput" placeholder="Program 이름, 설명, 태그 검색" /></div>
+        <div class="field"><input type="text" id="searchInput" placeholder="프로그램 이름, 설명, 태그 검색" /></div>
         <div class="field">
           <select id="categorySelect">
             <option value="all">All Categories</option>
           </select>
         </div>
-        <button class="icon-btn" id="themeToggle" title="테마 변경">🌙</button>
       </div>
       <div class="chips" id="categoryChips"></div>
     </section>
@@ -294,7 +358,7 @@
         <div class="section-meta" id="resultMeta">0 programs</div>
       </div>
       <div class="tool-grid" id="toolGrid"></div>
-      <div class="empty" id="emptyState">조건에 맞는 Program이 없습니다.</div>
+      <div class="empty" id="emptyState">조건에 맞는 프로그램이 없습니다.</div>
     </section>
 
   </div>
@@ -304,7 +368,7 @@
       {
         id: 'fbo-search',
         name: 'FBO Search',
-        description: '공항별 FBO 정보 및 연락처 조회.',
+        description: '공항별 FBO 정보 조회 및 연락처 확인 프로그램.',
         category: 'FBO',
         icon: '📞',
         tags: ['FBO', 'airport', 'ops'],
@@ -314,7 +378,7 @@
       {
         id: 'currency-checker',
         name: 'Currency Checker',
-        description: '승무원 및 운항 관련 currency 상태 조회.',
+        description: '승무원 및 운항 관련 currency 상태 조회 프로그램.',
         category: 'Crew',
         icon: '✅',
         tags: ['currency', 'crew', 'status'],
@@ -324,7 +388,7 @@
       {
         id: 'hl8080-route',
         name: 'HL8080 Route',
-       description: 'HL8080 항공기 Route 및 Tracking.\n(Waypoint detail Click & NDB 버튼 on/off 설정 가능)'
+        description: 'HL8080 항공기 라우트 및 트래킹 시각화 화면.',
         category: 'Tracking',
         icon: '🛫',
         tags: ['HL8080', 'route', 'tracking'],
@@ -334,7 +398,7 @@
       {
         id: 'hl8372-route',
         name: 'HL8372 Route',
-        description: 'HL8372 항공기 Route 및 Tracking.\n(Waypoint detail Click & NDB 버튼 on/off 설정 가능)'
+        description: 'HL8372 항공기 라우트 및 트래킹 시각화 화면.',
         category: 'Tracking',
         icon: '🛫',
         tags: ['HL8372', 'route', 'tracking'],
@@ -344,7 +408,7 @@
       {
         id: 'hospital-search',
         name: 'Hospital Search',
-        description: '공항 주변 병원 검색.\n(대학병원, 종합병원 우선검색)',
+        description: '공항 주변 종합병원 및 대학병원 검색 프로그램.',
         category: 'Medical',
         icon: '🏥',
         tags: ['hospital', 'medical', 'search'],
@@ -463,7 +527,7 @@
               </div>
             </div>
             <div class="tool-footer">
-          
+              <div class="updated">Updated ${tool.updated}</div>
               <a class="btn btn-primary" href="${tool.url}" target="_blank" rel="noopener noreferrer">Open</a>
             </div>
           </article>
