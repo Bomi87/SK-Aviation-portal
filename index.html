@@ -539,7 +539,7 @@ const tools = [
             </div>
             <div class="tool-footer">
              
-              <a class="btn btn-primary" href="${tool.url}" target="_blank" rel="noopener noreferrer">Open</a>
+              <a class="btn btn-primary" href="#" onclick="openTool(event, '${tool.id}')" target="_blank" rel="noopener noreferrer">Open</a>
             </div>
           </article>
         `;
@@ -567,6 +567,23 @@ const tools = [
     updateStats();
     renderTools();
     window.toggleFavorite = toggleFavorite;
+    function openTool(event, toolId) {
+  event.preventDefault();
+
+  const tool = tools.find(t => t.id === toolId);
+  if (!tool) return;
+
+  let url = tool.url;
+
+  // Tracking 프로그램만 강제 새로고침용 파라미터 추가
+  if (tool.category === 'Tracking') {
+    const ts = Date.now();
+    url += (url.includes('?') ? '&' : '?') + '_ts=' + ts;
+  }
+
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+    window.openTool = openTool;
   </script>
 </body>
 </html>
