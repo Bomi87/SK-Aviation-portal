@@ -335,7 +335,6 @@
         <img src="SK_LOGO.png" alt="SK Aviation logo" class="brand-logo" />
         <div class="brand-text">
           <h1 class="brand-title">SK-Aviation Programs</h1>
-         
         </div>
       </div>
       <button class="icon-btn" id="themeToggle" title="테마 변경">🌙</button>
@@ -361,89 +360,112 @@
       <div class="tool-grid" id="toolGrid"></div>
       <div class="empty" id="emptyState">조건에 맞는 프로그램이 없습니다.</div>
     </section>
-
   </div>
 
- <script>
-const tools = [
-  {
-    id: 'currency-checker',
-    name: 'Currency Checker',
-    description: '승무원 및 운항 관련 currency 상태 조회.',
-    category: 'Crew',
-    icon: '✅',
-    tags: ['currency', 'crew', 'status'],
-    updated: '2026-04-15',
-    order: 1,
-    url: 'https://bomi87.github.io/Currency/'
-  },
-  {
-    id: 'fbo-search',
-    name: 'FBO Search',
-    description: '공항별 FBO 및 연락처 조회.',
-    category: 'Airport',
-    icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.11.37 2.3.56 3.58.56a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.07 21 3 13.93 3 5a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.28.19 2.47.56 3.58a1 1 0 0 1-.24 1.01l-2.2 2.2Z" fill="#ec4899"/></svg>',
-    tags: ['FBO', 'airport', 'ops'],
-    updated: '2026-04-15',
-    order: 2,
-    url: 'https://bomi87.github.io/FBO/'
-  },
-  {
-    id: 'factsheet',
-    name: 'FACT Sheet',
-    description: '공항별 FACT Sheet PDF 조회.',
-    category: 'Airport',
-    icon: '📄',
-    tags: ['factsheet', 'airport', 'pdf'],
-    updated: '2026-04-15',
-    order: 3,
-    url: 'https://bomi87.github.io/FACTSHEET/'
-  },
-  {
-    id: 'past-wx',
-    name: 'Historical WX',
-    description: '시간대별 공항 과거 기상 조회 및 분석.',
-    category: 'Airport',
-    icon: '🌦️',
-    tags: ['pastwx', 'weather', 'airport', 'history'],
-    updated: '2026-04-15',
-    order: 4,
-    url: 'https://bomi87.github.io/Past_WX/'
-  },
-  {
-    id: 'hl8080-route',
-    name: 'HL8080 Route',
-    description: 'HL8080 항공기 Route 및 Tracking.\n(Waypoint detail Click & NDB 버튼 on/off 설정 가능)',
-    category: 'Tracking',
-    icon: '🛫',
-    tags: ['HL8080', 'route', 'tracking'],
-    updated: '2026-04-15',
-    order: 5,
-    url: 'https://bomi87.github.io/FLIGHT_MAP/?file=live/HL8080.kml&hexs=71C080,71C372,71C550,71C290,71C299,71BA27,71C508,71C230,71C068,71C222,ad45a4'
-  },
-  {
-    id: 'hl8372-route',
-    name: 'HL8372 Route',
-    description: 'HL8372 항공기 Route 및 Tracking.\n(Waypoint detail Click & NDB 버튼 on/off 설정 가능)',
-    category: 'Tracking',
-    icon: '🛫',
-    tags: ['HL8372', 'route', 'tracking'],
-    updated: '2026-04-15',
-    order: 6,
-    url: 'https://bomi87.github.io/FLIGHT_MAP/?file=live/HL8372.kml&hexs=71C080,71C372,71C550,71C290,71C299,71BA27,71C508,71C230,71C068,71C222,ad45a4'
-  },
-  {
-    id: 'hospital-search',
-    name: 'Hospital Search',
-    description: '공항 주변 병원 조회.\n(대학병원, 종합병원 우선 조회)',
-    category: 'Medical',
-    icon: '🏥',
-    tags: ['hospital', 'medical', 'search'],
-    updated: '2026-04-15',
-    order: 7,
-    url: 'https://bomi87.github.io/Hospital/'
-  }
-];
+  <script>
+    const FAA_CODE_API_URL = 'https://script.google.com/macros/s/AKfycbyKA1tC1eLNc_yRwduGAtRnggd81GlUuvf_TdrB4bWn3LAA_C_DAV2o1V1nCzTSt1j5/exec';
+
+    const tools = [
+      {
+        id: 'currency-checker',
+        name: 'Currency Checker',
+        description: '승무원 및 운항 관련 currency 상태 조회.',
+        category: 'Crew',
+        icon: '✅',
+        tags: ['currency', 'crew', 'status'],
+        updated: '2026-04-15',
+        order: 1,
+        url: 'https://bomi87.github.io/Currency/'
+      },
+      {
+        id: 'fbo-search',
+        name: 'FBO Search',
+        description: '공항별 FBO 및 연락처 조회.',
+        category: 'Airport',
+        icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.11.37 2.3.56 3.58.56a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.07 21 3 13.93 3 5a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.28.19 2.47.56 3.58a1 1 0 0 1-.24 1.01l-2.2 2.2Z" fill="#ec4899"/></svg>',
+        tags: ['FBO', 'airport', 'ops'],
+        updated: '2026-04-15',
+        order: 2,
+        url: 'https://bomi87.github.io/FBO/'
+      },
+      {
+        id: 'factsheet',
+        name: 'FACT Sheet',
+        description: '공항별 FACT Sheet PDF 조회.',
+        category: 'Airport',
+        icon: '📄',
+        tags: ['factsheet', 'airport', 'pdf'],
+        updated: '2026-04-15',
+        order: 3,
+        url: 'https://bomi87.github.io/FACTSHEET/'
+      },
+      {
+        id: 'past-wx',
+        name: 'Historical WX',
+        description: '시간대별 공항 과거 기상 조회 및 분석.',
+        category: 'Airport',
+        icon: '🌦️',
+        tags: ['pastwx', 'weather', 'airport', 'history'],
+        updated: '2026-04-15',
+        order: 4,
+        url: 'https://bomi87.github.io/Past_WX/'
+      },
+      {
+        id: 'faa-nas-status',
+        name: 'FAA NAS Status',
+        description: 'FAA National Airspace System status overview.',
+        category: 'Airport',
+        icon: '🚦',
+        tags: ['faa', 'nas', 'status', 'delay'],
+        updated: '2026-04-15',
+        order: 5,
+        url: 'https://nasstatus.faa.gov/'
+      },
+      {
+        id: 'faa-airport-status',
+        name: 'FAA Airport Status',
+        description: 'ICAO 또는 IATA 공항코드를 입력하면 FAA 공항 상태 페이지 오픈.\n(4 LETTER 입력 시 3 LETTER 자동 변환)',
+        category: 'Airport',
+        icon: '🗺️',
+        tags: ['faa', 'airport', 'status', 'delay', 'iata', 'icao'],
+        updated: '2026-04-15',
+        order: 6,
+        action: 'faa-airport-status'
+      },
+      {
+        id: 'hl8080-route',
+        name: 'HL8080 Route',
+        description: 'HL8080 항공기 Route 및 Tracking.\n(Waypoint detail Click & NDB 버튼 on/off 설정 가능)',
+        category: 'Tracking',
+        icon: '🛫',
+        tags: ['HL8080', 'route', 'tracking'],
+        updated: '2026-04-15',
+        order: 7,
+        url: 'https://bomi87.github.io/FLIGHT_MAP/?file=live/HL8080.kml&hexs=71C080,71C372,71C550,71C290,71C299,71BA27,71C508,71C230,71C068,71C222,ad45a4'
+      },
+      {
+        id: 'hl8372-route',
+        name: 'HL8372 Route',
+        description: 'HL8372 항공기 Route 및 Tracking.\n(Waypoint detail Click & NDB 버튼 on/off 설정 가능)',
+        category: 'Tracking',
+        icon: '🛫',
+        tags: ['HL8372', 'route', 'tracking'],
+        updated: '2026-04-15',
+        order: 8,
+        url: 'https://bomi87.github.io/FLIGHT_MAP/?file=live/HL8372.kml&hexs=71C080,71C372,71C550,71C290,71C299,71BA27,71C508,71C230,71C068,71C222,ad45a4'
+      },
+      {
+        id: 'hospital-search',
+        name: 'Hospital Search',
+        description: '공항 주변 병원 조회.\n(대학병원, 종합병원 우선 조회)',
+        category: 'Medical',
+        icon: '🏥',
+        tags: ['hospital', 'medical', 'search'],
+        updated: '2026-04-15',
+        order: 9,
+        url: 'https://bomi87.github.io/Hospital/'
+      }
+    ];
 
     const searchInput = document.getElementById('searchInput');
     const categorySelect = document.getElementById('categorySelect');
@@ -452,7 +474,7 @@ const tools = [
     const emptyState = document.getElementById('emptyState');
     const resultMeta = document.getElementById('resultMeta');
     const themeToggle = document.getElementById('themeToggle');
-                        
+
     const FAVORITE_KEY = 'toolPortalFavorites';
     const THEME_KEY = 'toolPortalTheme';
 
@@ -487,16 +509,16 @@ const tools = [
       setTheme(localStorage.getItem(THEME_KEY) || 'light');
     }
 
-  function categories() {
-  const preferredOrder = ['Crew', 'Airport', 'Tracking', 'Medical'];
-  const existing = [...new Set(tools.map(t => t.category))];
-  return preferredOrder.filter(cat => existing.includes(cat));
-}
+    function categories() {
+      const preferredOrder = ['Crew', 'Airport', 'Tracking', 'Medical'];
+      const existing = [...new Set(tools.map(t => t.category))];
+      return preferredOrder.filter(cat => existing.includes(cat));
+    }
 
     function populateCategoryControls() {
       const cats = categories();
- categorySelect.innerHTML = '<option value="all">All</option>' +
-  cats.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+      categorySelect.innerHTML = '<option value="all">All</option>' +
+        cats.map(cat => `<option value="${cat}">${cat}</option>`).join('');
 
       categoryChips.innerHTML = [
         '<button class="chip active" data-category="all">All</button>',
@@ -532,11 +554,11 @@ const tools = [
 
     function renderTools() {
       const items = filteredTools();
-const sorted = [...items].sort((a, b) => {
-  const af = favorites.includes(a.id) ? 1 : 0;
-  const bf = favorites.includes(b.id) ? 1 : 0;
-  return bf - af || (a.order || 999) - (b.order || 999) || a.name.localeCompare(b.name);
-});
+      const sorted = [...items].sort((a, b) => {
+        const af = favorites.includes(a.id) ? 1 : 0;
+        const bf = favorites.includes(b.id) ? 1 : 0;
+        return bf - af || (a.order || 999) - (b.order || 999) || a.name.localeCompare(b.name);
+      });
 
       toolGrid.innerHTML = sorted.map(tool => {
         const isFav = favorites.includes(tool.id);
@@ -555,7 +577,6 @@ const sorted = [...items].sort((a, b) => {
               </div>
             </div>
             <div class="tool-footer">
-             
               <a class="btn btn-primary" href="#" onclick="openTool(event, '${tool.id}')" target="_blank" rel="noopener noreferrer">Open</a>
             </div>
           </article>
@@ -569,12 +590,47 @@ const sorted = [...items].sort((a, b) => {
     function updateStats() {
     }
 
+    async function getFaaAirportStatusUrl(inputCode) {
+      const code = String(inputCode || '').trim().toUpperCase();
+
+      if (!code) {
+        throw new Error('공항코드가 비어있습니다.');
+      }
+
+      if (/^[A-Z]{3}$/.test(code)) {
+        return `https://www.fly.faa.gov/fly/flyfaa/flyfaaindex?ARPT=${encodeURIComponent(code)}&p=1`;
+      }
+
+      if (!/^[A-Z]{4}$/.test(code)) {
+        throw new Error('3 또는 4 LETTER 공항코드를 입력해줘.');
+      }
+
+    
+
+      const res = await fetch(`${FAA_CODE_API_URL}?code=${encodeURIComponent(code)}`, {
+        method: 'GET'
+      });
+
+      if (!res.ok) {
+        throw new Error(`API 호출 실패 (${res.status})`);
+      }
+
+      const data = await res.json();
+
+      if (!data.ok || !data.faaUrl) {
+        throw new Error(data.error || '공항코드 변환 실패');
+      }
+
+      return data.faaUrl;
+    }
+
     searchInput.addEventListener('input', renderTools);
     categorySelect.addEventListener('change', () => {
       activeCategory = categorySelect.value;
       updateActiveChips();
       renderTools();
     });
+
     themeToggle.addEventListener('click', () => {
       setTheme(document.body.classList.contains('dark') ? 'light' : 'dark');
     });
@@ -583,15 +639,34 @@ const sorted = [...items].sort((a, b) => {
     initTheme();
     updateStats();
     renderTools();
+
     window.toggleFavorite = toggleFavorite;
-   function openTool(event, toolId) {
-  event.preventDefault();
 
-  const tool = tools.find(t => t.id === toolId);
-  if (!tool) return;
+    async function openTool(event, toolId) {
+      event.preventDefault();
 
-  window.open(tool.url, '_blank', 'noopener,noreferrer');
-}
+      const tool = tools.find(t => t.id === toolId);
+      if (!tool) return;
+
+      try {
+        if (tool.action === 'faa-airport-status') {
+          const code = prompt('ICAO 또는 IATA 공항코드를 입력해줘.\\n예: RKSI / ICN / KJFK / JFK');
+          if (!code) return;
+
+          const url = await getFaaAirportStatusUrl(code);
+          window.open(url, '_blank', 'noopener,noreferrer');
+          return;
+        }
+
+        if (tool.url) {
+          window.open(tool.url, '_blank', 'noopener,noreferrer');
+        }
+      } catch (err) {
+        console.error(err);
+        alert(err.message || '실행 중 오류가 발생했어.');
+      }
+    }
+
     window.openTool = openTool;
   </script>
 </body>
