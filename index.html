@@ -605,8 +605,6 @@
         throw new Error('3 또는 4 LETTER 공항코드를 입력해줘.');
       }
 
-    
-
       const res = await fetch(`${FAA_CODE_API_URL}?code=${encodeURIComponent(code)}`, {
         method: 'GET'
       });
@@ -622,6 +620,60 @@
       }
 
       return data.faaUrl;
+    }
+
+    function askAirportCode() {
+      return new Promise((resolve) => {
+        const modal = document.getElementById('airportCodeModal');
+        const input = document.getElementById('airportCodeInput');
+        const okBtn = document.getElementById('airportCodeOk');
+        const cancelBtn = document.getElementById('airportCodeCancel');
+
+        function cleanup() {
+          input.removeEventListener('keydown', onKeydown);
+          okBtn.removeEventListener('click', onOk);
+          cancelBtn.removeEventListener('click', onCancel);
+          modal.removeEventListener('click', onBackdrop);
+        }
+
+        function close(value) {
+          modal.style.display = 'none';
+          input.value = '';
+          cleanup();
+          resolve(value);
+        }
+
+        function onOk() {
+          close(input.value.trim().toUpperCase());
+        }
+
+        function onCancel() {
+          close(null);
+        }
+
+        function onBackdrop(e) {
+          if (e.target === modal) close(null);
+        }
+
+        function onKeydown(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            onOk();
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            onCancel();
+          }
+        }
+
+        modal.style.display = 'flex';
+        input.value = '';
+        setTimeout(() => input.focus(), 0);
+
+        input.addEventListener('keydown', onKeydown);
+        okBtn.addEventListener('click', onOk);
+        cancelBtn.addEventListener('click', onCancel);
+        modal.addEventListener('click', onBackdrop);
+      });
     }
 
     searchInput.addEventListener('input', renderTools);
@@ -650,7 +702,7 @@
 
       try {
         if (tool.action === 'faa-airport-status') {
-          const code = prompt('ICAO 또는 IATA 공항코드를 입력해줘.\\n예: RKSI / ICN / KJFK / JFK');
+          const code = await askAirportCode();
           if (!code) return;
 
           const url = await getFaaAirportStatusUrl(code);
@@ -663,11 +715,33 @@
         }
       } catch (err) {
         console.error(err);
-        alert(err.message || '실행 중 오류가 발생했어.');
+        alert(err.message || '실행 중 오류 발생.');
       }
     }
 
     window.openTool = openTool;
   </script>
+
+  <div id="airportCodeModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:9999; align-items:center; justify-content:center; padding:16px;">
+    <div style="width:100%; max-width:460px; background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); padding:20px;">
+      <div style="font-size:18px; font-weight:800; margin-bottom:10px;">FAA Airport Status</div>
+      <div style="font-size:14px; color:var(--muted); line-height:1.5; margin-bottom:14px;">
+        ICAO 또는 IATA 공항코드를 입력.<br>
+        예: KEWR / EWR
+      </div>
+      <input
+        id="airportCodeInput"
+        type="text"
+        maxlength="4"
+        autocomplete="off"
+        placeholder="예: KEWR"
+        style="width:100%; height:48px; border:1px solid var(--line); background:var(--panel); color:var(--text); border-radius:12px; padding:0 14px; outline:none;"
+      />
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+        <button id="airportCodeCancel" class="btn btn-soft" type="button">취소</button>
+        <button id="airportCodeOk" class="btn btn-primary" type="button">확인</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
