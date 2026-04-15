@@ -693,7 +693,7 @@
         id: 'faa-nas-status',
         name: 'FAA NAS Status',
         description: 'FAA National Airspace System status overview.',
-        category: 'Airport',
+        category: 'FAA',
         icon: '🚦',
         tags: ['faa', 'nas', 'status', 'delay'],
         updated: '2026-04-15',
@@ -704,8 +704,8 @@
         id: 'faa-airport-status',
         name: 'FAA Airport Status',
         description: 'ICAO 또는 IATA 공항코드를 입력하면 FAA 공항 상태 페이지 오픈.\n(4 LETTER 입력 시 3 LETTER 자동 변환)',
-        category: 'Airport',
-        icon: '🗺️',
+        category: 'FAA',
+        icon: '⏰',
         tags: ['faa', 'airport', 'status', 'delay', 'iata', 'icao'],
         updated: '2026-04-15',
         order: 6,
@@ -789,7 +789,7 @@
     }
 
     function categories() {
-      const preferredOrder = ['Crew', 'Airport', 'Tracking', 'Medical'];
+      const preferredOrder = ['Crew', 'Airport', 'Tracking', 'FAA' , 'Medical'];
       const existing = [...new Set(tools.map(t => t.category))];
       return preferredOrder.filter(cat => existing.includes(cat));
     }
