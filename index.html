@@ -678,11 +678,23 @@
         order: 3,
         url: 'https://bomi87.github.io/FACTSHEET/'
       },
+
+      {
+  id: 'awc-metar-taf',
+  name: 'METAR & TAF',
+  description: 'ICAO 4 LETTER 공항코드를 입력하면 METAR + TAF 조회 페이지 오픈.',
+  category: 'WX',
+  icon: '⛅',
+  tags: ['metar', 'taf', 'weather', 'wx'],
+  updated: '2026-04-15',
+  order: 5,
+  action: 'awc-metar-taf'
+},
       {
         id: 'past-wx',
         name: 'Historical WX',
         description: '시간대별 공항 과거 기상 조회 및 분석.',
-        category: 'Airport',
+        category: 'WX',
         icon: '🌦️',
         tags: ['pastwx', 'weather', 'airport', 'history'],
         updated: '2026-04-15',
@@ -788,12 +800,11 @@
       setTheme(localStorage.getItem(THEME_KEY) || 'light');
     }
 
-    function categories() {
-      const preferredOrder = ['Crew', 'Airport', 'Tracking', 'FAA' , 'Medical'];
-      const existing = [...new Set(tools.map(t => t.category))];
-      return preferredOrder.filter(cat => existing.includes(cat));
-    }
-
+function categories() {
+  const preferredOrder = ['Crew', 'Airport', 'WX', 'Tracking', 'FAA', 'Medical'];
+  const existing = [...new Set(tools.map(t => t.category))];
+  return preferredOrder.filter(cat => existing.includes(cat));
+}
     function populateCategoryControls() {
       const cats = categories();
       categorySelect.innerHTML = '<option value="all">All</option>' +
@@ -890,66 +901,79 @@
 
       throw new Error('3 또는 4 LETTER 공항코드를 입력해줘.');
     }
+function getAwcMetarTafUrl(inputCode) {
+  const icao = String(inputCode || '').trim().toUpperCase();
 
-    function askAirportCode() {
-      return new Promise((resolve) => {
-        const modal = document.getElementById('airportCodeModal');
-        const input = document.getElementById('airportCodeInput');
-        const okBtn = document.getElementById('airportCodeOk');
-        const cancelBtn = document.getElementById('airportCodeCancel');
+  if (!/^[A-Z]{4}$/.test(icao)) {
+    throw new Error('METAR/TAF는 4 LETTER ICAO 코드를 입력해줘.');
+  }
 
-        function onInput() {
-          input.value = input.value.toUpperCase();
-        }
+  return `https://aviationweather.gov/data/metar/?ids=${encodeURIComponent(icao)}&taf=1`;
+}
+function askAirportCode(title = 'Airport Code Input', desc = 'ICAO 또는 IATA 공항코드를 입력해줘.') {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('airportCodeModal');
+    const input = document.getElementById('airportCodeInput');
+    const okBtn = document.getElementById('airportCodeOk');
+    const cancelBtn = document.getElementById('airportCodeCancel');
+    const titleEl = document.getElementById('airportCodeModalTitle');
+    const descEl = document.getElementById('airportCodeModalDesc');
 
-        function cleanup() {
-          input.removeEventListener('input', onInput);
-          input.removeEventListener('keydown', onKeydown);
-          okBtn.removeEventListener('click', onOk);
-          cancelBtn.removeEventListener('click', onCancel);
-          modal.removeEventListener('click', onBackdrop);
-        }
-
-        function close(value) {
-          modal.style.display = 'none';
-          input.value = '';
-          cleanup();
-          resolve(value);
-        }
-
-        function onOk() {
-          close(input.value.trim().toUpperCase());
-        }
-
-        function onCancel() {
-          close(null);
-        }
-
-        function onBackdrop(e) {
-          if (e.target === modal) close(null);
-        }
-
-        function onKeydown(e) {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            onOk();
-          } else if (e.key === 'Escape') {
-            e.preventDefault();
-            onCancel();
-          }
-        }
-
-        modal.style.display = 'flex';
-        input.value = '';
-        setTimeout(() => input.focus(), 0);
-
-        input.addEventListener('input', onInput);
-        input.addEventListener('keydown', onKeydown);
-        okBtn.addEventListener('click', onOk);
-        cancelBtn.addEventListener('click', onCancel);
-        modal.addEventListener('click', onBackdrop);
-      });
+    function onInput() {
+      input.value = input.value.toUpperCase();
     }
+
+    function cleanup() {
+      input.removeEventListener('input', onInput);
+      input.removeEventListener('keydown', onKeydown);
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      modal.removeEventListener('click', onBackdrop);
+    }
+
+    function close(value) {
+      modal.style.display = 'none';
+      input.value = '';
+      cleanup();
+      resolve(value);
+    }
+
+    function onOk() {
+      close(input.value.trim().toUpperCase());
+    }
+
+    function onCancel() {
+      close(null);
+    }
+
+    function onBackdrop(e) {
+      if (e.target === modal) close(null);
+    }
+
+    function onKeydown(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        onOk();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onCancel();
+      }
+    }
+
+    titleEl.textContent = title;
+    descEl.textContent = desc;
+
+    modal.style.display = 'flex';
+    input.value = '';
+    setTimeout(() => input.focus(), 0);
+
+    input.addEventListener('input', onInput);
+    input.addEventListener('keydown', onKeydown);
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    modal.addEventListener('click', onBackdrop);
+  });
+}
 
     searchInput.addEventListener('input', renderTools);
     categorySelect.addEventListener('change', () => {
@@ -969,39 +993,54 @@
 
     window.toggleFavorite = toggleFavorite;
 
-    async function openTool(event, toolId) {
-      event.preventDefault();
+   async function openTool(event, toolId) {
+  event.preventDefault();
 
-      const tool = tools.find(t => t.id === toolId);
-      if (!tool) return;
+  const tool = tools.find(t => t.id === toolId);
+  if (!tool) return;
 
-      try {
-        if (tool.action === 'faa-airport-status') {
-          const code = await askAirportCode();
-          if (!code) return;
+  try {
+   if (tool.action === 'faa-airport-status') {
+  const code = await askAirportCode(
+    'FAA Airport Status',
+    'ICAO 또는 IATA 미국공항 코드 입력.'
+  );
+  if (!code) return;
 
-          const url = getFaaAirportStatusUrl(code);
-          window.open(url, '_blank', 'noopener,noreferrer');
-          return;
-        }
+  const url = getFaaAirportStatusUrl(code);
+  window.open(url, '_blank', 'noopener,noreferrer');
+  return;
+}
 
-        if (tool.url) {
-          window.open(tool.url, '_blank', 'noopener,noreferrer');
-        }
-      } catch (err) {
-        console.error(err);
-        alert(err.message || '실행 중 오류 발생.');
-      }
+if (tool.action === 'awc-metar-taf') {
+  const code = await askAirportCode(
+    'METAR & TAF',
+    'ICAO 4 LETTER 공항코드 입력. 예: RKSS / KEWR'
+  );
+  if (!code) return;
+
+  const url = getAwcMetarTafUrl(code);
+  window.open(url, '_blank', 'noopener,noreferrer');
+  return;
+}
+    if (tool.url) {
+      window.open(tool.url, '_blank', 'noopener,noreferrer');
     }
+  } catch (err) {
+    console.error(err);
+    alert(err.message || '실행 중 오류 발생.');
+  }
+}
 
     window.openTool = openTool;
   </script>
 
   <div id="airportCodeModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:9999; align-items:center; justify-content:center; padding:16px;">
     <div style="width:100%; max-width:460px; background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); padding:20px;">
-      <div style="font-size:18px; font-weight:800; margin-bottom:10px;">FAA Airport Status</div>
-      <div style="font-size:14px; color:var(--muted); line-height:1.5; margin-bottom:14px;">
-        ICAO 또는 IATA 미국공항 코드를 입력.<br>
+   <div id="airportCodeModalTitle" style="font-size:18px; font-weight:800; margin-bottom:10px;">Airport Code Input</div>
+<div id="airportCodeModalDesc" style="font-size:14px; color:var(--muted); line-height:1.5; margin-bottom:14px;">
+  ICAO 또는 IATA 공항코드 입력.
+</div>
        
       </div>
       <input
