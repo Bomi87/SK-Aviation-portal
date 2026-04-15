@@ -363,7 +363,286 @@
   </div>
 
   <script>
-    const FAA_CODE_API_URL = 'https://script.google.com/macros/s/AKfycbyKA1tC1eLNc_yRwduGAtRnggd81GlUuvf_TdrB4bWn3LAA_C_DAV2o1V1nCzTSt1j5/exec';
+    const ICAO_TO_IATA = {
+      KABI: 'ABI',
+      KSPI: 'SPI',
+      KCAK: 'CAK',
+      KALB: 'ALB',
+      KABQ: 'ABQ',
+      KAEX: 'AEX',
+      KBFI: 'BFI',
+      PGUM: 'GUM',
+      KAVL: 'AVL',
+      KASE: 'ASE',
+      KACY: 'ACY',
+      KAGS: 'AGS',
+      KAUS: 'AUS',
+      KGRB: 'GRB',
+      KBED: 'BED',
+      KBWI: 'BWI',
+      KBGR: 'BGR',
+      KPAH: 'PAH',
+      KBTR: 'BTR',
+      KBLI: 'BLI',
+      KTOP: 'TOP',
+      KBIL: 'BIL',
+      KBHM: 'BHM',
+      KBIS: 'BIS',
+      KLEX: 'LEX',
+      KBUR: 'BUR',
+      KBOI: 'BOI',
+      KLOU: 'LOU',
+      KBDL: 'BDL',
+      KBRO: 'BRO',
+      KBQK: 'BQK',
+      KBUF: 'BUF',
+      KBTV: 'BTV',
+      KBMI: 'BMI',
+      KCWA: 'CWA',
+      KCHS: 'CHS',
+      KCLT: 'CLT',
+      KCHO: 'CHO',
+      KCHA: 'CHA',
+      KMDW: 'MDW',
+      KRFD: 'RFD',
+      KCVG: 'CVG',
+      KBKL: 'BKL',
+      KCLE: 'CLE',
+      KCOS: 'COS',
+      KCAE: 'CAE',
+      KJQF: 'USA',
+      KCRP: 'CRP',
+      KDFW: 'DFW',
+      KDAL: 'DAL',
+      KMSN: 'MSN',
+      KDAB: 'DAB',
+      KDEN: 'DEN',
+      KDSM: 'DSM',
+      KDTW: 'DTW',
+      KDDC: 'DDC',
+      KDHN: 'DHN',
+      KDBQ: 'DBQ',
+      KDRO: 'DRO',
+      KEGE: 'EGE',
+      KECU: 'ECU',
+      KELP: 'ELP',
+      KEFD: 'EFD',
+      KEKS: 'EKS',
+      KOMA: 'OMA',
+      KEUG: 'EUG',
+      KEVV: 'EVV',
+      PAFA: 'FAI',
+      KFOE: 'FOE',
+      KFLL: 'FLL',
+      KFSM: 'FSM',
+      KFWA: 'FWA',
+      KAFW: 'AFW',
+      KFAT: 'FAT',
+      KSUN: 'SUN',
+      KGNV: 'GNV',
+      KBZN: 'BZN',
+      KGCK: 'GCK',
+      KGYY: 'GYY',
+      KMKE: 'MKE',
+      KIAH: 'IAH',
+      KGRR: 'GRR',
+      KGPI: 'FCA',
+      KGYR: 'GYR',
+      KGFK: 'GFK',
+      KPIA: 'PIA',
+      KROC: 'ROC',
+      KLWB: 'LWB',
+      KWAY: 'WAY',
+      KGSP: 'GSP',
+      KGPT: 'GPT',
+      KGUC: 'GUC',
+      KSYR: 'SYR',
+      KMDT: 'MDT',
+      KATL: 'ATL',
+      KHND: 'HSH',
+      KORL: 'ORL',
+      PHTO: 'ITO',
+      KHOU: 'HOU',
+      PHNL: 'HNL',
+      KPTK: 'PTK',
+      KHSV: 'HSV',
+      KIDA: 'IDA',
+      KIND: 'IND',
+      KJAN: 'JAN',
+      KJAX: 'JAX',
+      KDAY: 'DAY',
+      KJFK: 'JFK',
+      KCMH: 'CMH',
+      KSNA: 'SNA',
+      KTWF: 'TWF',
+      PHOG: 'OGG',
+      KMKC: 'MKC',
+      KMCI: 'MCI',
+      PHKO: 'KOA',
+      KLGA: 'LGA',
+      KLFT: 'LFT',
+      KSTL: 'STL',
+      KLAN: 'LAN',
+      KMWC: 'MWC',
+      KABE: 'ABE',
+      KLWS: 'LWS',
+      PHLI: 'LIH',
+      KLNK: 'LNK',
+      KLIT: 'LIT',
+      KBOS: 'BOS',
+      KLGB: 'LGB',
+      KLAX: 'LAX',
+      KMSY: 'MSY',
+      KMAE: 'MAE',
+      KMLU: 'MLU',
+      KMHT: 'MHT',
+      KMHR: 'MHR',
+      KLAS: 'LAS',
+      KTYS: 'TYS',
+      KBFL: 'BFL',
+      KMLB: 'MLB',
+      KMEM: 'MEM',
+      KILG: 'ILG',
+      KMIA: 'MIA',
+      KMSP: 'MSP',
+      KMOB: 'MOB',
+      KMRY: 'MRY',
+      KMTJ: 'MTJ',
+      KMYR: 'MYR',
+      KAPF: 'APF',
+      KBNA: 'BNA',
+      KCPR: 'CPR',
+      KEWR: 'EWR',
+      KPHF: 'PHF',
+      KIAG: 'IAG',
+      KORF: 'ORF',
+      KSJC: 'SJC',
+      KVGT: 'VGT',
+      KLBF: 'LBF',
+      KXNA: 'XNA',
+      KECP: 'ECP',
+      KOAK: 'OAK',
+      KORD: 'ORD',
+      KONT: 'ONT',
+      KMCO: 'MCO',
+      KOXR: 'OXR',
+      KFMY: 'FMY',
+      KPBI: 'PBI',
+      KPSP: 'PSP',
+      KPMD: 'PMD',
+      KPNS: 'PNS',
+      KPHL: 'PHL',
+      KDVT: 'DVT',
+      KPHX: 'PHX',
+      KIWA: 'AZA',
+      KGSO: 'GSO',
+      KPIT: 'PIT',
+      KPIH: 'PIH',
+      KPDX: 'PDX',
+      KPWM: 'PWM',
+      KPGD: 'PGD',
+      KMLI: 'MLI',
+      KUIN: 'UIN',
+      KRDU: 'RDU',
+      KRDD: 'RDD',
+      KRNO: 'RNO',
+      KRIC: 'RIC',
+      KLCK: 'LCK',
+      KROA: 'ROA',
+      KMFR: 'MFR',
+      KFOD: 'FOD',
+      KDCA: 'DCA',
+      PGRO: 'ROP',
+      KSAC: 'SAC',
+      KSMF: 'SMF',
+      PGSN: 'SPN',
+      KSLC: 'SLC',
+      KSAT: 'SAT',
+      KSAN: 'SAN',
+      KSFO: 'SFO',
+      KSBP: 'SBP',
+      KSFB: 'SFB',
+      KSBA: 'SBA',
+      KSMX: 'SMX',
+      KSRQ: 'SRQ',
+      KSAV: 'SAV',
+      KSEA: 'SEA',
+      KSAA: 'SAA',
+      KSHV: 'SHV',
+      KFSD: 'FSD',
+      KSUX: 'SUX',
+      KSTS: 'STS',
+      KSBN: 'SBN',
+      KRSW: 'RSW',
+      KABY: 'ABY',
+      KGEG: 'GEG',
+      KSGF: 'SGF',
+      KPIE: 'PIE',
+      KSDF: 'SDF',
+      KSWF: 'SWF',
+      KSCK: 'SCK',
+      KPVD: 'PVD',
+      KTLH: 'TLH',
+      KTPA: 'TPA',
+      PANC: 'ANC',
+      KTEB: 'TEB',
+      KTXK: 'TXK',
+      KCID: 'CID',
+      PGWT: 'TIQ',
+      KTOL: 'TOL',
+      KPSC: 'PSC',
+      KTRI: 'TRI',
+      KTUS: 'TUS',
+      KTUL: 'TUL',
+      KHVN: 'HVN',
+      KVNY: 'VNY',
+      PAIW: 'IWK',
+      KGJT: 'GJT',
+      KALW: 'ALW',
+      KIAD: 'IAD',
+      KALO: 'ALO',
+      KHPN: 'HPN',
+      KICT: 'ICT',
+      KOKC: 'OKC',
+      KXWA: 'XWA',
+      KILM: 'ILM',
+      KHDN: 'HDN',
+      KCRW: 'CRW',
+      KNYL: 'YUM',
+      KOPF: 'OPF',
+      KMCC: 'MCC',
+      PTRO: 'ROR',
+      KGON: 'GON',
+      KMKL: 'MKL',
+      KMBS: 'MBS',
+      KMTN: 'MTN',
+      PTPN: 'PNI',
+      KCDW: 'CDW',
+      KACK: 'ACK',
+      KADW: 'ADW',
+      KAGC: 'AGC',
+      KAMA: 'AMA',
+      KAVP: 'AVP',
+      KBAF: 'BAF',
+      KCGI: 'CGI',
+      KCSG: 'CSG',
+      KDPA: 'DPA',
+      KFNT: 'FNT',
+      KHUF: 'HUF',
+      KISP: 'ISP',
+      KLMT: 'LMT',
+      KMAF: 'MAF',
+      KMCN: 'MCN',
+      KMGM: 'MGM',
+      KMWH: 'MWH',
+      KORH: 'ORH',
+      KPAE: 'PAE',
+      KSUS: 'SUS',
+      KYIP: 'YIP',
+      KFAR: 'FAR',
+      KBGM: 'BGM',
+      KNUQ: 'NUQ'
+    };
 
     const tools = [
       {
@@ -590,7 +869,7 @@
     function updateStats() {
     }
 
-    async function getFaaAirportStatusUrl(inputCode) {
+    function getFaaAirportStatusUrl(inputCode) {
       const code = String(inputCode || '').trim().toUpperCase();
 
       if (!code) {
@@ -601,86 +880,77 @@
         return `https://www.fly.faa.gov/fly/flyfaa/flyfaaindex?ARPT=${encodeURIComponent(code)}&p=1`;
       }
 
-      if (!/^[A-Z]{4}$/.test(code)) {
-        throw new Error('3 또는 4 LETTER 공항코드를 입력해줘.');
+      if (/^[A-Z]{4}$/.test(code)) {
+        const iata = ICAO_TO_IATA[code];
+        if (!iata) {
+          throw new Error('해당 4 LETTER 코드의 3 LETTER 매핑이 없습니다.');
+        }
+        return `https://www.fly.faa.gov/fly/flyfaa/flyfaaindex?ARPT=${encodeURIComponent(iata)}&p=1`;
       }
 
-      const res = await fetch(`${FAA_CODE_API_URL}?code=${encodeURIComponent(code)}`, {
-        method: 'GET'
+      throw new Error('3 또는 4 LETTER 공항코드를 입력해줘.');
+    }
+
+    function askAirportCode() {
+      return new Promise((resolve) => {
+        const modal = document.getElementById('airportCodeModal');
+        const input = document.getElementById('airportCodeInput');
+        const okBtn = document.getElementById('airportCodeOk');
+        const cancelBtn = document.getElementById('airportCodeCancel');
+
+        function onInput() {
+          input.value = input.value.toUpperCase();
+        }
+
+        function cleanup() {
+          input.removeEventListener('input', onInput);
+          input.removeEventListener('keydown', onKeydown);
+          okBtn.removeEventListener('click', onOk);
+          cancelBtn.removeEventListener('click', onCancel);
+          modal.removeEventListener('click', onBackdrop);
+        }
+
+        function close(value) {
+          modal.style.display = 'none';
+          input.value = '';
+          cleanup();
+          resolve(value);
+        }
+
+        function onOk() {
+          close(input.value.trim().toUpperCase());
+        }
+
+        function onCancel() {
+          close(null);
+        }
+
+        function onBackdrop(e) {
+          if (e.target === modal) close(null);
+        }
+
+        function onKeydown(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            onOk();
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            onCancel();
+          }
+        }
+
+        modal.style.display = 'flex';
+        input.value = '';
+        setTimeout(() => input.focus(), 0);
+
+        input.addEventListener('input', onInput);
+        input.addEventListener('keydown', onKeydown);
+        okBtn.addEventListener('click', onOk);
+        cancelBtn.addEventListener('click', onCancel);
+        modal.addEventListener('click', onBackdrop);
       });
-
-      if (!res.ok) {
-        throw new Error(`API 호출 실패 (${res.status})`);
-      }
-
-      const data = await res.json();
-
-      if (!data.ok || !data.faaUrl) {
-        throw new Error(data.error || '공항코드 변환 실패');
-      }
-
-      return data.faaUrl;
     }
 
-function askAirportCode() {
-  return new Promise((resolve) => {
-    const modal = document.getElementById('airportCodeModal');
-    const input = document.getElementById('airportCodeInput');
-    const okBtn = document.getElementById('airportCodeOk');
-    const cancelBtn = document.getElementById('airportCodeCancel');
-
-    function onInput() {
-      input.value = input.value.toUpperCase();
-    }
-
-    function cleanup() {
-      input.removeEventListener('input', onInput);
-      input.removeEventListener('keydown', onKeydown);
-      okBtn.removeEventListener('click', onOk);
-      cancelBtn.removeEventListener('click', onCancel);
-      modal.removeEventListener('click', onBackdrop);
-    }
-
-    function close(value) {
-      modal.style.display = 'none';
-      input.value = '';
-      cleanup();
-      resolve(value);
-    }
-
-    function onOk() {
-      close(input.value.trim().toUpperCase());
-    }
-
-    function onCancel() {
-      close(null);
-    }
-
-    function onBackdrop(e) {
-      if (e.target === modal) close(null);
-    }
-
-    function onKeydown(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        onOk();
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        onCancel();
-      }
-    }
-
-    modal.style.display = 'flex';
-    input.value = '';
-    setTimeout(() => input.focus(), 0);
-
-    input.addEventListener('input', onInput);
-    input.addEventListener('keydown', onKeydown);
-    okBtn.addEventListener('click', onOk);
-    cancelBtn.addEventListener('click', onCancel);
-    modal.addEventListener('click', onBackdrop);
-  });
-}
     searchInput.addEventListener('input', renderTools);
     categorySelect.addEventListener('change', () => {
       activeCategory = categorySelect.value;
@@ -710,7 +980,7 @@ function askAirportCode() {
           const code = await askAirportCode();
           if (!code) return;
 
-          const url = await getFaaAirportStatusUrl(code);
+          const url = getFaaAirportStatusUrl(code);
           window.open(url, '_blank', 'noopener,noreferrer');
           return;
         }
@@ -734,17 +1004,17 @@ function askAirportCode() {
         IATA 또는 ICAO 공항코드를 입력.<br>
         예: EWR / KEWR
       </div>
-<input
-  id="airportCodeInput"
-  type="text"
-  maxlength="4"
-  autocomplete="off"
-  inputmode="text"
-  autocapitalize="characters"
-  spellcheck="false"
-  placeholder="예: EWR"
-  style="width:100%; height:48px; border:1px solid var(--line); background:var(--panel); color:var(--text); border-radius:12px; padding:0 14px; outline:none; text-transform:uppercase;"
-/>
+      <input
+        id="airportCodeInput"
+        type="text"
+        maxlength="4"
+        autocomplete="off"
+        inputmode="text"
+        autocapitalize="characters"
+        spellcheck="false"
+        placeholder="예: KEWR"
+        style="width:100%; height:48px; border:1px solid var(--line); background:var(--panel); color:var(--text); border-radius:12px; padding:0 14px; outline:none; text-transform:uppercase;"
+      />
       <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
         <button id="airportCodeCancel" class="btn btn-soft" type="button">취소</button>
         <button id="airportCodeOk" class="btn btn-primary" type="button">확인</button>
