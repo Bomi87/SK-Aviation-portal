@@ -902,13 +902,27 @@ function categories() {
       throw new Error('3 또는 4 LETTER 공항코드를 입력해줘.');
     }
 function getAwcMetarTafUrl(inputCode) {
-  const icao = String(inputCode || '').trim().toUpperCase();
+  const raw = String(inputCode || '').toUpperCase().trim();
 
-  if (!/^[A-Z]{4}$/.test(icao)) {
-    throw new Error('METAR/TAF는 4 LETTER ICAO 코드를 입력해줘.');
+  if (!raw) {
+    throw new Error('ICAO 코드를 입력해줘.');
   }
 
-  return `https://aviationweather.gov/data/metar/?ids=${encodeURIComponent(icao)}&taf=1`;
+  const codes = raw
+    .split(/[\s,]+/)
+    .map(v => v.trim())
+    .filter(Boolean);
+
+  if (!codes.length) {
+    throw new Error('유효한 ICAO 코드가 없습니다.');
+  }
+
+  const invalid = codes.filter(code => !/^[A-Z]{4}$/.test(code));
+  if (invalid.length) {
+    throw new Error(`4 LETTER ICAO만 가능해: ${invalid.join(', ')}`);
+  }
+
+  return `https://aviationweather.gov/data/metar/?ids=${encodeURIComponent(codes.join(','))}&taf=1`;
 }
 function askAirportCode(title = 'Airport Code Input', desc = 'ICAO 또는 IATA 공항코드를 입력해줘.') {
   return new Promise((resolve) => {
@@ -1015,7 +1029,7 @@ function askAirportCode(title = 'Airport Code Input', desc = 'ICAO 또는 IATA �
 if (tool.action === 'awc-metar-taf') {
   const code = await askAirportCode(
     'METAR & TAF',
-    'ICAO 4 LETTER 공항코드 입력. 예: RKSS / KEWR'
+    'ICAO 4 LETTER 공항코드 입력.(여러 공항 조회 가능)'
   );
   if (!code) return;
 
@@ -1048,12 +1062,12 @@ if (tool.action === 'awc-metar-taf') {
     <input
       id="airportCodeInput"
       type="text"
-      maxlength="4"
+   
       autocomplete="off"
       inputmode="text"
       autocapitalize="characters"
       spellcheck="false"
-      placeholder="예: RKSS / KEWR"
+      placeholder="예: RKSS KEWR 또는 RKSS,KEWR"
       style="width:100%; height:48px; border:1px solid var(--line); background:var(--panel); color:var(--text); border-radius:12px; padding:0 14px; outline:none; text-transform:uppercase;"
     />
 
