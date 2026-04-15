@@ -622,60 +622,65 @@
       return data.faaUrl;
     }
 
-    function askAirportCode() {
-      return new Promise((resolve) => {
-        const modal = document.getElementById('airportCodeModal');
-        const input = document.getElementById('airportCodeInput');
-        const okBtn = document.getElementById('airportCodeOk');
-        const cancelBtn = document.getElementById('airportCodeCancel');
+function askAirportCode() {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('airportCodeModal');
+    const input = document.getElementById('airportCodeInput');
+    const okBtn = document.getElementById('airportCodeOk');
+    const cancelBtn = document.getElementById('airportCodeCancel');
 
-        function cleanup() {
-          input.removeEventListener('keydown', onKeydown);
-          okBtn.removeEventListener('click', onOk);
-          cancelBtn.removeEventListener('click', onCancel);
-          modal.removeEventListener('click', onBackdrop);
-        }
-
-        function close(value) {
-          modal.style.display = 'none';
-          input.value = '';
-          cleanup();
-          resolve(value);
-        }
-
-        function onOk() {
-          close(input.value.trim().toUpperCase());
-        }
-
-        function onCancel() {
-          close(null);
-        }
-
-        function onBackdrop(e) {
-          if (e.target === modal) close(null);
-        }
-
-        function onKeydown(e) {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            onOk();
-          } else if (e.key === 'Escape') {
-            e.preventDefault();
-            onCancel();
-          }
-        }
-
-        modal.style.display = 'flex';
-        input.value = '';
-        setTimeout(() => input.focus(), 0);
-
-        input.addEventListener('keydown', onKeydown);
-        okBtn.addEventListener('click', onOk);
-        cancelBtn.addEventListener('click', onCancel);
-        modal.addEventListener('click', onBackdrop);
-      });
+    function onInput() {
+      input.value = input.value.toUpperCase();
     }
 
+    function cleanup() {
+      input.removeEventListener('input', onInput);
+      input.removeEventListener('keydown', onKeydown);
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      modal.removeEventListener('click', onBackdrop);
+    }
+
+    function close(value) {
+      modal.style.display = 'none';
+      input.value = '';
+      cleanup();
+      resolve(value);
+    }
+
+    function onOk() {
+      close(input.value.trim().toUpperCase());
+    }
+
+    function onCancel() {
+      close(null);
+    }
+
+    function onBackdrop(e) {
+      if (e.target === modal) close(null);
+    }
+
+    function onKeydown(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        onOk();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onCancel();
+      }
+    }
+
+    modal.style.display = 'flex';
+    input.value = '';
+    setTimeout(() => input.focus(), 0);
+
+    input.addEventListener('input', onInput);
+    input.addEventListener('keydown', onKeydown);
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    modal.addEventListener('click', onBackdrop);
+  });
+}
     searchInput.addEventListener('input', renderTools);
     categorySelect.addEventListener('change', () => {
       activeCategory = categorySelect.value;
@@ -729,14 +734,17 @@
         ICAO 또는 IATA 공항코드를 입력.<br>
         예: KEWR / EWR
       </div>
-      <input
-        id="airportCodeInput"
-        type="text"
-        maxlength="4"
-        autocomplete="off"
-        placeholder="예: KEWR"
-        style="width:100%; height:48px; border:1px solid var(--line); background:var(--panel); color:var(--text); border-radius:12px; padding:0 14px; outline:none;"
-      />
+<input
+  id="airportCodeInput"
+  type="text"
+  maxlength="4"
+  autocomplete="off"
+  inputmode="text"
+  autocapitalize="characters"
+  spellcheck="false"
+  placeholder="예: KEWR"
+  style="width:100%; height:48px; border:1px solid var(--line); background:var(--panel); color:var(--text); border-radius:12px; padding:0 14px; outline:none; text-transform:uppercase;"
+/>
       <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
         <button id="airportCodeCancel" class="btn btn-soft" type="button">취소</button>
         <button id="airportCodeOk" class="btn btn-primary" type="button">확인</button>
