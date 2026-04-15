@@ -364,7 +364,7 @@
 
   </div>
 
-  <script>
+ <script>
 const tools = [
   {
     id: 'currency-checker',
@@ -373,7 +373,8 @@ const tools = [
     category: 'Crew',
     icon: '✅',
     tags: ['currency', 'crew', 'status'],
-    updated: '2026-04-10',
+    updated: '2026-04-15',
+    order: 1,
     url: 'https://bomi87.github.io/Currency/'
   },
   {
@@ -383,18 +384,31 @@ const tools = [
     category: 'Airport',
     icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.11.37 2.3.56 3.58.56a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.07 21 3 13.93 3 5a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.28.19 2.47.56 3.58a1 1 0 0 1-.24 1.01l-2.2 2.2Z" fill="#ec4899"/></svg>',
     tags: ['FBO', 'airport', 'ops'],
-    updated: '2026-04-10',
+    updated: '2026-04-15',
+    order: 2,
     url: 'https://bomi87.github.io/FBO/'
   },
   {
     id: 'factsheet',
-    name: 'FACTSHEET',
-    description: '공항별 FACT SHEET PDF 조회.',
+    name: 'FACT Sheet',
+    description: '공항별 FACT Sheet PDF 조회.',
     category: 'Airport',
     icon: '📄',
     tags: ['factsheet', 'airport', 'pdf'],
-    updated: '2026-04-10',
+    updated: '2026-04-15',
+    order: 3,
     url: 'https://bomi87.github.io/FACTSHEET/'
+  },
+  {
+    id: 'past-wx',
+    name: 'Past WX',
+    description: '공항별 과거 기상 및 historical weather 조회.',
+    category: 'Airport',
+    icon: '🌦️',
+    tags: ['pastwx', 'weather', 'airport', 'history'],
+    updated: '2026-04-15',
+    order: 4,
+    url: 'https://bomi87.github.io/Past_WX/'
   },
   {
     id: 'hl8080-route',
@@ -403,7 +417,8 @@ const tools = [
     category: 'Tracking',
     icon: '🛫',
     tags: ['HL8080', 'route', 'tracking'],
-    updated: '2026-04-10',
+    updated: '2026-04-15',
+    order: 5,
     url: 'https://bomi87.github.io/FLIGHT_MAP/?file=live/HL8080.kml&hexs=71C080,71C372,71C550,71C290,71C299,71BA27,71C508,71C230,71C068,71C222,ad45a4'
   },
   {
@@ -413,7 +428,8 @@ const tools = [
     category: 'Tracking',
     icon: '🛫',
     tags: ['HL8372', 'route', 'tracking'],
-    updated: '2026-04-10',
+    updated: '2026-04-15',
+    order: 6,
     url: 'https://bomi87.github.io/FLIGHT_MAP/?file=live/HL8372.kml&hexs=71C080,71C372,71C550,71C290,71C299,71BA27,71C508,71C230,71C068,71C222,ad45a4'
   },
   {
@@ -423,7 +439,8 @@ const tools = [
     category: 'Medical',
     icon: '🏥',
     tags: ['hospital', 'medical', 'search'],
-    updated: '2026-04-10',
+    updated: '2026-04-15',
+    order: 7,
     url: 'https://bomi87.github.io/Hospital/'
   }
 ];
@@ -515,11 +532,11 @@ const tools = [
 
     function renderTools() {
       const items = filteredTools();
-      const sorted = [...items].sort((a, b) => {
-        const af = favorites.includes(a.id) ? 1 : 0;
-        const bf = favorites.includes(b.id) ? 1 : 0;
-        return bf - af || a.name.localeCompare(b.name);
-      });
+const sorted = [...items].sort((a, b) => {
+  const af = favorites.includes(a.id) ? 1 : 0;
+  const bf = favorites.includes(b.id) ? 1 : 0;
+  return bf - af || (a.order || 999) - (b.order || 999) || a.name.localeCompare(b.name);
+});
 
       toolGrid.innerHTML = sorted.map(tool => {
         const isFav = favorites.includes(tool.id);
