@@ -208,6 +208,13 @@
     }
     .section-title { font-size: 20px; font-weight: 800; margin: 0; }
     .section-meta { color: var(--muted); font-size: 13px; }
+    .section-refresh-btn{
+  width:36px;
+  height:36px;
+  border-radius:12px;
+  font-size:16px;
+  padding:0;
+}
     .tool-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -353,10 +360,13 @@
     </section>
 
     <section>
-      <div class="section-head">
-        <h2 class="section-title">My Programs</h2>
-        <div class="section-meta" id="resultMeta">0 programs</div>
-      </div>
+  <div class="section-head">
+  <div style="display:flex; align-items:center; gap:10px;">
+    <h2 class="section-title">My Programs</h2>
+    <button class="icon-btn section-refresh-btn" id="refreshBtn" title="새로고침">🔄</button>
+  </div>
+  <div class="section-meta" id="resultMeta">0 programs</div>
+</div>
       <div class="tool-grid" id="toolGrid"></div>
       <div class="empty" id="emptyState">조건에 맞는 프로그램이 없습니다.</div>
     </section>
@@ -776,7 +786,8 @@
     const emptyState = document.getElementById('emptyState');
     const resultMeta = document.getElementById('resultMeta');
     const themeToggle = document.getElementById('themeToggle');
-
+const refreshBtn = document.getElementById('refreshBtn');
+    
     const FAVORITE_KEY = 'toolPortalFavorites';
     const THEME_KEY = 'toolPortalTheme';
 
@@ -1010,7 +1021,9 @@ function askAirportCode(title = 'Airport Code Input', desc = 'ICAO 또는 IATA �
     themeToggle.addEventListener('click', () => {
       setTheme(document.body.classList.contains('dark') ? 'light' : 'dark');
     });
-
+refreshBtn.addEventListener('click', () => {
+  location.reload();
+});
     populateCategoryControls();
     initTheme();
     updateStats();
