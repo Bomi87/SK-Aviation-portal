@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>BOMI Operations Portal</title>
   <style>
     :root {
@@ -127,6 +127,19 @@
     }
     .btn, .chip, .icon-btn, input, select {
       font: inherit;
+    }
+
+    /* 모바일 input 클릭 시 자동 Zoom-in 방지 */
+    input,
+    select,
+    textarea,
+    button {
+      font-size: 16px !important;
+    }
+
+    #airportCodeInput {
+      font-size: 16px !important;
+      transform: translateZ(0);
     }
     .btn {
       border: 0;
@@ -393,7 +406,7 @@
   </div>
 
   <script>
-    const ATIS_PROXY_URL = 'https://script.google.com/macros/s/AKfycby2vrtRet0CaYtQhuY6guxgShh2S28MGa-_3NUYbXovZJX1wAm3_rzcaUJxmpXeYcVyGQ/exec';
+    const ATIS_PROXY_URL = 'https://script.google.com/macros/s/AKfycby3zO6e8F5sF3YVwi718GIg8LSYrYBA-VH9tgFw6LK_xr-yFaF59b9hxPyIx1dL0e45Pg/exec';
 
     const ICAO_TO_IATA = {
       KABI: 'ABI',
@@ -1256,7 +1269,7 @@ if (tool.action === 'awc-metar-taf') {
       autocapitalize="characters"
       spellcheck="false"
      
-      style="width:100%; height:48px; border:1px solid var(--line); background:var(--panel); color:var(--text); border-radius:12px; padding:0 14px; outline:none; text-transform:uppercase;"
+      style="width:100%; height:48px; border:1px solid var(--line); background:var(--panel); color:var(--text); border-radius:12px; padding:0 14px; outline:none; text-transform:uppercase; font-size:16px;"
     />
 
     <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
