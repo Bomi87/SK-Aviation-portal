@@ -725,7 +725,7 @@
 {
   id: 'amos-realtime',
   name: 'AMOS RealTime',
-  description: 'AMOS Monitoring by Domestic Airport(Korea Aviation Meteorological Office) .',
+  description: 'AMOS Monitoring by Domestic Airport(Korea Aviation Meteorological Office).',
   category: 'WX',
   icon: '🌩️',
   tags: ['amos', 'realtime', 'weather'],
@@ -1077,6 +1077,18 @@ refreshBtn.addEventListener('click', () => {
 
     window.toggleFavorite = toggleFavorite;
 
+function openExternalUrl(url) {
+  const newWindow = window.open(url, '_blank');
+
+  // 모바일/브라우저 팝업 차단 시 현재 창에서라도 열리게 처리
+  if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+    window.location.href = url;
+    return;
+  }
+
+  newWindow.opener = null;
+}
+
    async function openTool(event, toolId) {
   event.preventDefault();
 
@@ -1092,7 +1104,19 @@ refreshBtn.addEventListener('click', () => {
   if (!code) return;
 
   const url = getFaaAirportStatusUrl(code);
-  window.open(url, '_blank', 'noopener,noreferrer');
+  openExternalUrl(url);
+  return;
+}
+
+if (tool.action === 'atis-guru') {
+  const code = await askAirportCode(
+    'ATIS Guru',
+    'ICAO 4 LETTER 공항코드 입력. 예: RKSI'
+  );
+  if (!code) return;
+
+  const url = getAtisGuruUrl(code);
+  openExternalUrl(url);
   return;
 }
 
@@ -1104,11 +1128,11 @@ if (tool.action === 'awc-metar-taf') {
   if (!code) return;
 
   const url = getAwcMetarTafUrl(code);
-  window.open(url, '_blank', 'noopener,noreferrer');
+  openExternalUrl(url);
   return;
 }
     if (tool.url) {
-      window.open(tool.url, '_blank', 'noopener,noreferrer');
+      openExternalUrl(tool.url);
     }
   } catch (err) {
     console.error(err);
