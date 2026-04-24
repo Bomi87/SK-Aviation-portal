@@ -678,6 +678,17 @@
         url: 'https://bomi87.github.io/FBO/'
       },
       {
+        id: 'atis-guru',
+        name: 'ATIS Guru',
+        description: 'ICAO 4 LETTER 공항코드를 입력하면 해당 공항의 Digital ATIS 페이지 오픈.',
+        category: 'Airport',
+        icon: '📡',
+        tags: ['atis', 'd-atis', 'airport', 'weather'],
+        updated: '2026-04-25',
+        order: 2.1,
+        action: 'atis-guru'
+      },
+      {
         id: 'factsheet',
         name: 'FACT Sheet',
         description: '공항별 FACT Sheet PDF 조회.',
@@ -714,7 +725,7 @@
 {
   id: 'amos-realtime',
   name: 'AMOS RealTime',
-  description: '로그인 후 실시간 AMOS 화면으로 바로 이동.\n세션이 없으면 로그인 페이지로 이동.',
+  description: 'AMOS Monitoring by Domestic Airport(Korea Aviation Meteorological Office) .',
   category: 'WX',
   icon: '🌩️',
   tags: ['amos', 'realtime', 'weather'],
@@ -967,6 +978,19 @@ function getAwcMetarTafUrl(inputCode) {
   }
 
   return `https://aviationweather.gov/data/metar/?ids=${encodeURIComponent(codes.join(','))}&taf=1`;
+}
+function getAtisGuruUrl(inputCode) {
+  const code = String(inputCode || '').trim().toUpperCase();
+
+  if (!code) {
+    throw new Error('ICAO 코드를 입력해줘.');
+  }
+
+  if (!/^[A-Z]{4}$/.test(code)) {
+    throw new Error('ATIS Guru는 4 LETTER ICAO 코드만 가능해. 예: RKSI');
+  }
+
+  return `https://atis.guru/atis/${encodeURIComponent(code)}`;
 }
 function askAirportCode(title = 'Airport Code Input', desc = 'ICAO 또는 IATA 공항코드를 입력해줘.') {
   return new Promise((resolve) => {
