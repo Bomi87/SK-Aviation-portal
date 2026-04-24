@@ -406,7 +406,7 @@
   </div>
 
   <script>
-    const ATIS_PROXY_URL = 'https://script.google.com/macros/s/AKfycbyXR32ikMVLpm-XryqGipg1ULMCSrZCK3TMidMj6cNiLYjaVnbkNMx14pruklzCJk62IA/exec';
+    const ATIS_PROXY_URL = 'https://script.google.com/macros/s/AKfycbw_dcxyJO8EFi7c0Pn3Y6im8yO17VikIJOcwR-nlsDrqqXtUXUA9_I807_PuW5soWFZRw/exec';
 
     const ICAO_TO_IATA = {
       KABI: 'ABI',
@@ -714,7 +714,7 @@
       },
       {
         id: 'atis-guru',
-        name: 'ATIS Guru',
+        name: 'D-ATIS',
         description: 'ICAO 4 LETTER 공항코드를 입력하면 해당 공항의 Digital ATIS 데이터 조회.',
         category: 'Airport',
         icon: '📡',
@@ -1022,7 +1022,7 @@ function getAtisGuruUrl(inputCode) {
   }
 
   if (!/^[A-Z]{4}$/.test(code)) {
-    throw new Error('ATIS Guru는 4 LETTER ICAO 코드만 가능해. 예: RKSI');
+    throw new Error('D-ATIS는 4 LETTER ICAO 코드만 가능해. 예: RKSI');
   }
 
   return `https://atis.guru/atis/${encodeURIComponent(code)}`;
@@ -1036,7 +1036,7 @@ function getAtisGuruDataUrl(inputCode) {
   }
 
   if (!/^[A-Z]{4}$/.test(code)) {
-    throw new Error('ATIS Guru는 4 LETTER ICAO 코드만 가능해. 예: RKSI');
+    throw new Error('D-ATIS는 4 LETTER ICAO 코드만 가능해. 예: RKSI');
   }
 
   if (!ATIS_PROXY_URL || ATIS_PROXY_URL.includes('여기에_Apps_Script_Web_App_URL_입력')) {
@@ -1217,7 +1217,7 @@ function openExternalUrl(url) {
 
 if (tool.action === 'atis-guru') {
   const code = await askAirportCode(
-    'ATIS Guru',
+    'D-ATIS',
     'ICAO 4 LETTER 공항코드 입력. 예: RKSI'
   );
   if (!code) return;
