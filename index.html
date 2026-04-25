@@ -1011,7 +1011,6 @@ function getAwcMetarTafUrl(inputCode) {
   if (invalid.length) {
    throw new Error('4 LETTER ICAO 코드만 입력. 예: RKSI');
   }
-  }
 
   return `https://aviationweather.gov/data/metar/?ids=${encodeURIComponent(codes.join(','))}&taf=1`;
 }
@@ -1038,7 +1037,6 @@ function getAtisGuruDataUrl(inputCode) {
 
   if (!/^[A-Z]{4}$/.test(code)) {
    throw new Error('4 LETTER ICAO 코드만 입력. 예: RKSI');
-  }
   }
 
   if (!ATIS_PROXY_URL || ATIS_PROXY_URL.includes('여기에_Apps_Script_Web_App_URL_입력')) {
