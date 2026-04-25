@@ -406,7 +406,7 @@
   </div>
 
   <script>
-    const ATIS_PROXY_URL = 'https://script.google.com/macros/s/AKfycbzAfHm0nz0IEbIkeKVaVf999QxYSy9lhcqxuNcT-Nw9IT13Ac0addJV-kH76fLJEMltpA/exec';
+    const ATIS_PROXY_URL = 'https://script.google.com/macros/s/AKfycbxNySFAVubSXGzFTZWLmMItDIOq9Y0Xq9OGiblKCFZi_luxmeeN4GWl-Sz2xpFDV02Msg/exec';
 
     const ICAO_TO_IATA = {
       KABI: 'ABI',
@@ -1072,13 +1072,31 @@ function showAtisResultModal(data) {
 
   const parts = [];
 
+  if (data.combined && (data.combined.time || data.combined.text)) {
+  parts.push(
+    `COMBINED ARR/DEP ATIS
+${data.combined.time || ''}
+${data.combined.text || ''}`.trim()
+  );
+}
+
+if (!data.combined || !data.combined.text) {
   if (data.arrival && (data.arrival.time || data.arrival.text)) {
-    parts.push(`ARRIVAL ATIS\n${data.arrival.time || ''}\n${data.arrival.text || ''}`.trim());
+    parts.push(
+      `ARRIVAL ATIS
+${data.arrival.time || ''}
+${data.arrival.text || ''}`.trim()
+    );
   }
 
   if (data.departure && (data.departure.time || data.departure.text)) {
-    parts.push(`DEPARTURE ATIS\n${data.departure.time || ''}\n${data.departure.text || ''}`.trim());
+    parts.push(
+      `DEPARTURE ATIS
+${data.departure.time || ''}
+${data.departure.text || ''}`.trim()
+    );
   }
+}
 
   if (data.metar) {
     parts.push(`METAR\n${data.metar}`.trim());
