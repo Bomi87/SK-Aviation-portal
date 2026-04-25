@@ -406,7 +406,7 @@
   </div>
 
   <script>
-    const ATIS_PROXY_URL = 'https://script.google.com/macros/s/AKfycbxOnBUufmDGRjn8MUoAcbbVxp8o5ghGqPn4JbgSO7R03qzz8tNYIdOaTkCipIBLhjOh3w/exec';
+    const ATIS_PROXY_URL = 'https://script.google.com/macros/s/AKfycbwMdF-pcFmtglsTRuDXh7fAkBOpuWUUIk6JFc1FqZXWysd3_xpH52ZuKpQP9JraAem7Vw/exec';
 
     const ICAO_TO_IATA = {
       KABI: 'ABI',
@@ -1009,7 +1009,8 @@ function getAwcMetarTafUrl(inputCode) {
 
   const invalid = codes.filter(code => !/^[A-Z]{4}$/.test(code));
   if (invalid.length) {
-    throw new Error(`4 LETTER ICAO만 가능해: ${invalid.join(', ')}`);
+   throw new Error('4 LETTER ICAO 코드만 입력. 예: RKSI');
+  }
   }
 
   return `https://aviationweather.gov/data/metar/?ids=${encodeURIComponent(codes.join(','))}&taf=1`;
@@ -1022,7 +1023,7 @@ function getAtisGuruUrl(inputCode) {
   }
 
   if (!/^[A-Z]{4}$/.test(code)) {
-    throw new Error('D-ATIS는 4 LETTER ICAO 코드만 가능해. 예: RKSI');
+    throw new Error('4 LETTER ICAO 코드만 입력. 예: RKSI');
   }
 
   return `https://atis.guru/atis/${encodeURIComponent(code)}`;
@@ -1036,7 +1037,8 @@ function getAtisGuruDataUrl(inputCode) {
   }
 
   if (!/^[A-Z]{4}$/.test(code)) {
-    throw new Error('D-ATIS는 4 LETTER ICAO 코드만 가능해. 예: RKSI');
+   throw new Error('4 LETTER ICAO 코드만 입력. 예: RKSI');
+  }
   }
 
   if (!ATIS_PROXY_URL || ATIS_PROXY_URL.includes('여기에_Apps_Script_Web_App_URL_입력')) {
