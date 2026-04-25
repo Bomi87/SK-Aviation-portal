@@ -342,6 +342,38 @@
       color: var(--primary);
     }
 
+    .liveatc-actions{
+      display:none;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:12px;
+      padding-top:10px;
+      border-top:1px solid var(--line);
+    }
+    .liveatc-btn{
+      border:0;
+      border-radius:12px;
+      padding:10px 12px;
+      font-size:13px !important;
+      font-weight:700;
+      cursor:pointer;
+      background:#1f6feb;
+      color:#fff;
+    }
+    .liveatc-btn.secondary{
+      background:#374151;
+    }
+    .liveatc-note{
+      width:100%;
+      font-size:12px;
+      line-height:1.45;
+      color:var(--muted);
+      margin-top:2px;
+    }
+    .liveatc-btn:active{
+      transform:scale(.98);
+    }
+
     @media (max-width: 980px) {
       .hero { grid-template-columns: 1fr; }
       .controls { grid-template-columns: 1fr 1fr auto auto; }
@@ -406,7 +438,7 @@
   </div>
 
   <script>
-    const ATIS_PROXY_URL = 'https://script.google.com/macros/s/AKfycbwrXQpsdATeLuMUoWEryt9-2WFqmhGKVoWP-cKaZ5FTNx8kiWF3obBU3y6lDPbjSt-RvQ/exec';
+    const ATIS_PROXY_URL = 'https://script.google.com/macros/s/AKfycbyMagY4axJ3gI3xX2jOitu4teZZ1Sh093J_lrGla5fWS1UzOH7GXq3d3raW7iHoM0mvmg/exec';
 
     const ICAO_TO_IATA = {
       KABI: 'ABI',
@@ -1062,6 +1094,54 @@ async function fetchAtisGuruData(inputCode) {
   return data;
 }
 
+function getLiveAtcSearchUrl(icao) {
+  const code = String(icao || '').trim().toUpperCase();
+
+  if (!/^[A-Z]{4}$/.test(code)) {
+    return '';
+  }
+
+  return `https://www.liveatc.net/search/?icao=${encodeURIComponent(code)}`;
+}
+
+function renderLiveAtcActions(data) {
+  const box = document.getElementById('atisLiveAtcActions');
+  if (!box) return;
+
+  box.innerHTML = '';
+  box.style.display = 'none';
+
+  const live = data && data.liveAtc ? data.liveAtc : {};
+  const url = live.searchUrl || getLiveAtcSearchUrl(data && data.icao);
+
+  if (!url) return;
+
+  const button = document.createElement('button');
+  button.className = 'liveatc-btn';
+  button.type = 'button';
+  button.textContent = live.buttonLabel || '🎧 LiveATC ATIS / APP-DEP';
+  button.addEventListener('click', function () {
+    openExternalUrl(url);
+  });
+
+  box.appendChild(button);
+
+  const noteText = live.note || (
+    live.showRecommended
+      ? 'Latest digital ATIS may be unavailable or outdated. Use LiveATC for audio cross-check.'
+      : 'LiveATC link is provided for ATIS / APP-DEP audio cross-check.'
+  );
+
+  if (noteText) {
+    const note = document.createElement('div');
+    note.className = 'liveatc-note';
+    note.textContent = noteText;
+    box.appendChild(note);
+  }
+
+  box.style.display = 'flex';
+}
+
 function showAtisResultModal(data) {
   const modal = document.getElementById('atisResultModal');
   const title = document.getElementById('atisResultTitle');
@@ -1132,10 +1212,17 @@ ${data.departure.text || ''}`.trim()
 
   body.textContent = parts.length
     ? parts.join('\n\n------------------------------\n\n')
-    : '표시할 ATIS 데이터가 없습니다.';
+    : (data.error || '표시할 ATIS 데이터가 없습니다.');
+
+  renderLiveAtcActions(data);
 
   function close() {
     modal.style.display = 'none';
+    const liveAtcBox = document.getElementById('atisLiveAtcActions');
+    if (liveAtcBox) {
+      liveAtcBox.innerHTML = '';
+      liveAtcBox.style.display = 'none';
+    }
     closeBtn.removeEventListener('click', close);
   }
 
@@ -1331,6 +1418,7 @@ if (tool.action === 'awc-metar-taf') {
     </div>
 
     <div id="atisResultBody" class="atis-result-body"></div>
+    <div id="atisLiveAtcActions" class="liveatc-actions"></div>
 
     <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
       <button id="atisResultClose" class="btn btn-primary" type="button">닫기</button>
