@@ -1229,51 +1229,46 @@ function showAtisResultModal(data) {
 
   // 1순위: 새 구조 atisBlocks 표시
   // ARR/DEP/COMBINED 강제분류 대신, Apps Script가 추출한 ATIS 블록을 그대로 표시
-  if (Array.isArray(data.atisBlocks) && data.atisBlocks.length) {
-    data.atisBlocks.forEach(block => {
-      if (!block) return;
+if (Array.isArray(data.atisBlocks) && data.atisBlocks.length) {
+  data.atisBlocks.forEach(block => {
+    if (!block) return;
 
-      const label = block.label || 'CURRENT ATIS';
-      const time = block.time || '';
-      const text = block.text || '';
+    const label = block.label || 'CURRENT ATIS';
+    const text = block.text || '';
 
-      if (time || text) {
-        parts.push(
-          `${label}
-${time}
+    if (text) {
+      parts.push(
+        `${label}
 ${text}`.trim()
-        );
-      }
-    });
-  }
+      );
+    }
+  });
+}
 
   // 2순위: 구버전 호환용 combined / arrival / departure
   // atisBlocks가 없을 때만 사용
   if (!Array.isArray(data.atisBlocks) || !data.atisBlocks.length) {
-    if (data.combined && (data.combined.time || data.combined.text)) {
-      parts.push(
-        `COMBINED ARR/DEP ATIS
-${data.combined.time || ''}
+   if (data.combined && data.combined.text) {
+  parts.push(
+    `COMBINED ARR/DEP ATIS
 ${data.combined.text || ''}`.trim()
-      );
-    }
+  );
+}
 
     if (!data.combined || !data.combined.text) {
-      if (data.arrival && (data.arrival.time || data.arrival.text)) {
-        parts.push(
-          `ARRIVAL ATIS
-${data.arrival.time || ''}
+     if (data.arrival && data.arrival.text) {
+  parts.push(
+    `ARRIVAL ATIS
 ${data.arrival.text || ''}`.trim()
-        );
-      }
+  );
+}
 
-      if (data.departure && (data.departure.time || data.departure.text)) {
-        parts.push(
-          `DEPARTURE ATIS
-${data.departure.time || ''}
+   if (data.departure && data.departure.text) {
+  parts.push(
+    `DEPARTURE ATIS
 ${data.departure.text || ''}`.trim()
-        );
-      }
+  );
+}
     }
   }
 
