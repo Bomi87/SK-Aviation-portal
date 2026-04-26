@@ -342,37 +342,64 @@
       color: var(--primary);
     }
 
-    .liveatc-actions{
-      display:none;
-      gap:8px;
-      flex-wrap:wrap;
-      margin-top:12px;
-      padding-top:10px;
-      border-top:1px solid var(--line);
-    }
-    .liveatc-btn{
-      border:0;
-      border-radius:12px;
-      padding:10px 12px;
-      font-size:13px !important;
-      font-weight:700;
-      cursor:pointer;
-      background:#1f6feb;
-      color:#fff;
-    }
-    .liveatc-btn.secondary{
-      background:#374151;
-    }
-    .liveatc-note{
-      width:100%;
-      font-size:12px;
-      line-height:1.45;
-      color:var(--muted);
-      margin-top:2px;
-    }
-    .liveatc-btn:active{
-      transform:scale(.98);
-    }
+   .liveatc-actions{
+  display:none;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:12px;
+  padding-top:10px;
+  border-top:1px solid var(--line);
+}
+
+.atis-phone-group{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.atis-liveatc-group{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-left:auto;
+}
+
+.liveatc-btn,
+.atis-phone-btn{
+  border:0;
+  border-radius:12px;
+  padding:10px 12px;
+  font-size:13px !important;
+  font-weight:700;
+  cursor:pointer;
+  background:#1f6feb;
+  color:#fff;
+  text-decoration:none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+
+.atis-phone-btn{
+  background:#16a34a;
+}
+
+.liveatc-btn.secondary{
+  background:#374151;
+}
+
+.liveatc-note{
+  display:none !important;
+}
+
+.liveatc-btn:active,
+.atis-phone-btn:active{
+  transform:scale(.98);
+}
 
 
     .loading-overlay {
@@ -1170,6 +1197,72 @@ async function fetchAtisGuruData(inputCode) {
 }
 
 function getLiveAtcSearchUrl(icao) {
+  const ATIS_PHONE_BOOK = {
+  RKSI: [
+    { label: 'ATIS 전화', raw: '+82-32-743-2676' }
+  ],
+  RKSS: [
+    { label: 'ATIS 전화', raw: '+82-2-2660-2676' }
+  ],
+  RKPC: [
+    { label: 'ATIS 전화', raw: '+82-64-797-2676' }
+  ],
+  VHHH: [
+    { label: 'ARR ATIS 전화', raw: '+852-3141-2820' },
+    { label: 'DEP ATIS 전화', raw: '+852-3141-2705' }
+  ],
+  WSSS: [
+    { label: 'ATIS 전화', raw: '+65-6214-3915' }
+  ],
+  VOBL: [
+    { label: 'ATIS 전화', raw: '+91-80-2201-9936' }
+  ],
+  EDSB: [
+    { label: 'ATIS 전화', raw: '+49-7229-53222332' }
+  ]
+};
+
+function digitsOnly(s) {
+  return String(s || '').replace(/\D/g, '');
+}
+
+function makeAtisDialNumber(icao, rawNumber) {
+  const code = String(icao || '').trim().toUpperCase();
+  let digits = digitsOnly(rawNumber);
+
+  // 대한민국: +82 제거 후 앞에 0
+  if (code === 'RKSI' || code === 'RKSS' || code === 'RKPC') {
+    if (digits.startsWith('82')) {
+      digits = '0' + digits.slice(2);
+    } else if (!digits.startsWith('0')) {
+      digits = '0' + digits;
+    }
+    return digits;
+  }
+
+  // 해외: 앞에 00700 추가
+  if (!digits.startsWith('00700')) {
+    digits = '00700' + digits;
+  }
+
+  return digits;
+}
+
+function createAtisPhoneButton(item, icao) {
+  const dialNumber = makeAtisDialNumber(icao, item.raw);
+
+  const button = document.createElement('button');
+  button.className = 'atis-phone-btn';
+  button.type = 'button';
+  button.textContent = '📞 ' + item.label;
+  button.title = dialNumber;
+
+  button.addEventListener('click', function () {
+    window.location.href = 'tel:' + dialNumber;
+  });
+
+  return button;
+}
   const code = String(icao || '').trim().toUpperCase();
 
   if (!/^[A-Z]{4}$/.test(code)) {
@@ -1186,37 +1279,46 @@ function renderLiveAtcActions(data) {
   box.innerHTML = '';
   box.style.display = 'none';
 
-  const live = data && data.liveAtc ? data.liveAtc : {};
-  const url = live.searchUrl || getLiveAtcSearchUrl(data && data.icao);
+  const icao = String(data && data.icao ? data.icao : '').trim().toUpperCase();
 
-  if (!url) return;
+  const phoneItems = ATIS_PHONE_BOOK[icao] || [];
+  const phoneGroup = document.createElement('div');
+  phoneGroup.className = 'atis-phone-group';
 
-  const button = document.createElement('button');
-  button.className = 'liveatc-btn';
-  button.type = 'button';
-  button.textContent = live.buttonLabel || '🎧 LiveATC ATIS / APP-DEP';
-  button.addEventListener('click', function () {
-    openExternalUrl(url);
+  phoneItems.forEach(function (item) {
+    phoneGroup.appendChild(createAtisPhoneButton(item, icao));
   });
 
-  box.appendChild(button);
+  const live = data && data.liveAtc ? data.liveAtc : {};
+  const url = live.searchUrl || getLiveAtcSearchUrl(icao);
 
-  const noteText = live.note || (
-    live.showRecommended
-      ? 'Latest digital ATIS may be unavailable or outdated. Use LiveATC for audio cross-check.'
-      : 'LiveATC link is provided for ATIS / APP-DEP audio cross-check.'
-  );
+  const liveAtcGroup = document.createElement('div');
+  liveAtcGroup.className = 'atis-liveatc-group';
 
-  if (noteText) {
-    const note = document.createElement('div');
-    note.className = 'liveatc-note';
-    note.textContent = noteText;
-    box.appendChild(note);
+  if (url) {
+    const liveButton = document.createElement('button');
+    liveButton.className = 'liveatc-btn';
+    liveButton.type = 'button';
+    liveButton.textContent = live.buttonLabel || '🎧 LiveATC ATIS / APP-DEP';
+    liveButton.addEventListener('click', function () {
+      openExternalUrl(url);
+    });
+
+    liveAtcGroup.appendChild(liveButton);
   }
 
-  box.style.display = 'flex';
-}
+  if (phoneGroup.children.length) {
+    box.appendChild(phoneGroup);
+  }
 
+  if (liveAtcGroup.children.length) {
+    box.appendChild(liveAtcGroup);
+  }
+
+  if (box.children.length) {
+    box.style.display = 'flex';
+  }
+}
 function showAtisResultModal(data) {
   const modal = document.getElementById('atisResultModal');
   const title = document.getElementById('atisResultTitle');
