@@ -1272,14 +1272,6 @@ function createAtisPhoneButton(item, icao) {
 
   return button;
 }
-  const code = String(icao || '').trim().toUpperCase();
-
-  if (!/^[A-Z]{4}$/.test(code)) {
-    return '';
-  }
-
-  return `https://www.liveatc.net/search/?icao=${encodeURIComponent(code)}`;
-}
 
 function renderLiveAtcActions(data) {
   const box = document.getElementById('atisLiveAtcActions');
