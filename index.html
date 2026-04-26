@@ -1196,8 +1196,7 @@ async function fetchAtisGuruData(inputCode) {
   return data;
 }
 
-function getLiveAtcSearchUrl(icao) {
-  const ATIS_PHONE_BOOK = {
+const ATIS_PHONE_BOOK = {
   RKSI: [
     { label: 'ATIS 전화', raw: '+82-32-743-2676' }
   ],
@@ -1221,6 +1220,16 @@ function getLiveAtcSearchUrl(icao) {
     { label: 'ATIS 전화', raw: '+49-7229-53222332' }
   ]
 };
+
+function getLiveAtcSearchUrl(icao) {
+  const code = String(icao || '').trim().toUpperCase();
+
+  if (!/^[A-Z]{4}$/.test(code)) {
+    return '';
+  }
+
+  return `https://www.liveatc.net/search/?icao=${encodeURIComponent(code)}`;
+}
 
 function digitsOnly(s) {
   return String(s || '').replace(/\D/g, '');
