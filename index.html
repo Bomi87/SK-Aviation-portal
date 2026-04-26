@@ -1157,6 +1157,16 @@ function getAtisGuruDataUrl(inputCode) {
 }
 
 
+function getNavCanadaAeroViewUrl(inputCode) {
+  const code = String(inputCode || '').trim().toUpperCase();
+
+  if (!/^CY[A-Z0-9]{2}$/.test(code)) {
+    return '';
+  }
+
+  return 'https://spaces.navcanada.ca/workspace/aeroview/' + encodeURIComponent(code);
+}
+
 function showLoading(message, desc) {
   const overlay = document.getElementById('loadingOverlay');
   const titleEl = document.getElementById('loadingTitle');
@@ -1206,6 +1216,34 @@ const ATIS_PHONE_BOOK = {
   RKPC: [
     { label: 'ATIS 전화', raw: '+82-64-797-2676' }
   ],
+
+  // AirNav ATIS PHONE / ATIS PHONE NR / ATIS PHONE NUMBER
+  // 번호가 여러 개인 공항은 대표번호 1개만 사용
+  KATL: [
+    { label: 'ARR ATIS 전화', raw: '+1-404-763-7988' }
+  ],
+  KSFO: [
+    { label: 'ATIS 전화', raw: '+1-650-821-0677' }
+  ],
+  KLGB: [
+    { label: 'ATIS 전화', raw: '+1-562-608-4144' }
+  ],
+  KTCM: [
+    { label: 'ATIS 전화', raw: '+1-253-982-2847' }
+  ],
+  KNTU: [
+    { label: 'ATIS 전화', raw: '+1-757-433-2377' }
+  ],
+  KVBG: [
+    { label: 'ATIS 전화', raw: '+1-805-605-2847' }
+  ],
+  KTIK: [
+    { label: 'ATIS 전화', raw: '+1-405-734-5152' }
+  ],
+  KGUS: [
+    { label: 'ATIS 전화', raw: '+1-765-688-2293' }
+  ],
+
   VHHH: [
     { label: 'ARR ATIS 전화', raw: '+852-3141-2820' },
     { label: 'DEP ATIS 전화', raw: '+852-3141-2705' }
@@ -1240,7 +1278,8 @@ function makeAtisDialNumber(icao, rawNumber) {
   let digits = digitsOnly(rawNumber);
 
   // 대한민국: +82 제거 후 앞에 0
-  if (code === 'RKSI' || code === 'RKSS' || code === 'RKPC') {
+  // RK 계열 공항이면 한국 국내번호로 발신
+  if (code.startsWith('RK')) {
     if (digits.startsWith('82')) {
       digits = '0' + digits.slice(2);
     } else if (!digits.startsWith('0')) {
@@ -1306,6 +1345,21 @@ function renderLiveAtcActions(data) {
     });
 
     liveAtcGroup.appendChild(liveButton);
+  }
+
+  // 캐나다 공항 모달이 표시되는 경우를 대비한 AeroView 바로가기 버튼
+  const navCanadaUrl = getNavCanadaAeroViewUrl(icao);
+  if (navCanadaUrl) {
+    const navCanadaButton = document.createElement('button');
+    navCanadaButton.className = 'liveatc-btn secondary';
+    navCanadaButton.type = 'button';
+    navCanadaButton.textContent = '🇨🇦 NAV CANADA AeroView';
+    navCanadaButton.title = navCanadaUrl;
+    navCanadaButton.addEventListener('click', function () {
+      openExternalUrl(navCanadaUrl);
+    });
+
+    liveAtcGroup.appendChild(navCanadaButton);
   }
 
   if (phoneGroup.children.length) {
@@ -1526,9 +1580,18 @@ if (tool.action === 'atis-guru') {
   );
   if (!code) return;
 
-  showLoading('Data 조회 중...', `${String(code).trim().toUpperCase()} D-ATIS 데이터를 불러오는 중입니다.`);
+  const airportCode = String(code).trim().toUpperCase();
+
+  // 캐나다 공항은 ATIS 모달/프록시 조회 없이 NAV CANADA AeroView로 바로 이동
+  const navCanadaUrl = getNavCanadaAeroViewUrl(airportCode);
+  if (navCanadaUrl) {
+    openExternalUrl(navCanadaUrl);
+    return;
+  }
+
+  showLoading('Data 조회 중...', `${airportCode} D-ATIS 데이터를 불러오는 중입니다.`);
   try {
-    const data = await fetchAtisGuruData(code);
+    const data = await fetchAtisGuruData(airportCode);
     showAtisResultModal(data);
   } finally {
     hideLoading();
