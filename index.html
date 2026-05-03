@@ -911,16 +911,16 @@
         order: 7.1,
         action: 'faa-airport-status'
       },
-      {
+ {
   id: 'faa-cnd-diagram',
   name: 'FAA CND Diagram',
-  description: 'FAA Construction Notice Diagram 조회.\nICAO 또는 IATA 공항코드를 입력하면 Airport Closure/Restriction Graphic PDF 오픈.',
+  description: 'FAA Construction Notice Diagram 리스트 조회.\n제공 공항 확인 후 Airport Closure/Restriction Graphic PDF 오픈.',
   category: 'FAA',
   icon: '🚧',
   tags: ['faa', 'cnd', 'construction', 'notam', 'diagram', 'airport'],
   updated: '2026-05-03',
   order: 7.2,
-  action: 'faa-cnd-diagram'
+  url: 'https://bomi87.github.io/U.S_Airport_Diagram/'
 },
       {
         id: 'hl8080-route',
@@ -1112,40 +1112,7 @@ function categories() {
 
       throw new Error('3 또는 4 LETTER 공항코드를 입력해줘.');
     }
-    function getFaaCndDiagramUrl(inputCode) {
-  const code = String(inputCode || '').trim().toUpperCase();
-
-  if (!code) {
-    throw new Error('공항코드가 비어있습니다.');
-  }
-
-  let faaCode = '';
-
-  // 3 LETTER 입력: PIT, JFK, LAX
-  if (/^[A-Z]{3}$/.test(code)) {
-    faaCode = code;
-  }
-
-  // 4 LETTER 입력: KPIT, KJFK, PHNL, PGUM 등
-  else if (/^[A-Z]{4}$/.test(code)) {
-    faaCode = ICAO_TO_IATA[code];
-
-    // 매핑표에 없지만 미국 본토 K 계열이면 K 제거
-    if (!faaCode && code.startsWith('K')) {
-      faaCode = code.substring(1);
-    }
-
-    if (!faaCode) {
-      throw new Error('해당 4 LETTER 코드의 3 LETTER 매핑이 없습니다.');
-    }
-  }
-
-  else {
-    throw new Error('3 또는 4 LETTER 공항코드를 입력해줘.');
-  }
-
-  return `https://notams.aim.faa.gov/fnsprintservice/cndPdfServlet?airportCode=${encodeURIComponent(faaCode)}`;
-}
+ 
 function getAwcMetarTafUrl(inputCode) {
   const raw = String(inputCode || '').toUpperCase().trim();
 
@@ -1617,17 +1584,7 @@ function openExternalUrl(url) {
   openExternalUrl(url);
   return;
 }
-if (tool.action === 'faa-cnd-diagram') {
-  const code = await askAirportCode(
-    'FAA CND Diagram',
-    'ICAO 또는 IATA 미국공항 코드 입력. 예: KPIT 또는 PIT'
-  );
-  if (!code) return;
 
-  const url = getFaaCndDiagramUrl(code);
-  openExternalUrl(url);
-  return;
-}
 if (tool.action === 'atis-guru') {
   const code = await askAirportCode(
     'D-ATIS',
