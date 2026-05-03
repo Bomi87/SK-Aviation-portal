@@ -1172,6 +1172,20 @@ function getAtisGuruUrl(inputCode) {
   return `https://atis.guru/atis/${encodeURIComponent(code)}`;
 }
 
+    function getOpsgroupAirportUrl(inputCode) {
+  const code = String(inputCode || '').trim().toUpperCase();
+
+  if (!code) {
+    throw new Error('ICAO 코드를 입력해줘.');
+  }
+
+  if (!/^[A-Z]{4}$/.test(code)) {
+    throw new Error('4 LETTER ICAO 코드만 입력. 예: KEWR');
+  }
+
+  return `https://ops.group/dashboard/search-everything/results-airport/?icao=${encodeURIComponent(code)}`;
+}
+
 function getAtisGuruDataUrl(inputCode) {
   const code = String(inputCode || '').trim().toUpperCase();
 
@@ -1641,6 +1655,17 @@ if (tool.action === 'awc-metar-taf') {
   if (!code) return;
 
   const url = getAwcMetarTafUrl(code);
+  openExternalUrl(url);
+  return;
+}
+    if (tool.action === 'ops-group-airport') {
+  const code = await askAirportCode(
+    'OPS GROUP Airport',
+    'ICAO 4 LETTER 공항코드 입력. 예: KEWR'
+  );
+  if (!code) return;
+
+  const url = getOpsgroupAirportUrl(code);
   openExternalUrl(url);
   return;
 }
