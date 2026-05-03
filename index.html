@@ -944,6 +944,18 @@
         order: 8.1,
         url: 'https://bomi87.github.io/FLIGHT_MAP/?file=live/HL8372.kml&hexs=71C080,71C372,71C550,71C290,71C299,71BA27,71C508,71C230,71C068,71C222,71c229,71BE43'
       },
+
+      {
+  id: 'ops-group-briefings',
+  name: 'OPS GROUP Briefings',
+  description: 'OPS GROUP 항공 운항 브리핑 및 최신 공역/운항 이슈 확인.',
+  category: 'News',
+  icon: '📰',
+  tags: ['ops group', 'briefing', 'news', 'airspace', 'flight ops'],
+  updated: '2026-05-03',
+  order: 11,
+  url: 'https://ops.group/blog/category/briefings/'
+},
           {
         id: 'hospital-search',
         name: 'Hospital Search',
@@ -1012,7 +1024,7 @@ const refreshBtn = document.getElementById('refreshBtn');
     }
 
 function categories() {
-  const preferredOrder = ['Crew', 'Airport', 'WX', 'Tracking', 'FAA', 'Medical'];
+  const preferredOrder = ['Crew', 'Airport', 'WX', 'Tracking', 'FAA', 'News', 'Medical'];
   const existing = [...new Set(tools.map(t => t.category))];
   return preferredOrder.filter(cat => existing.includes(cat));
 }
