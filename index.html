@@ -256,6 +256,13 @@
       background: var(--primary-soft);
       font-size: 24px;
     }
+    .tool-custom-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  display: block;
+  border-radius: 8px;
+}
     .fav-btn {
       border: 0;
       background: transparent;
@@ -867,6 +874,18 @@
         order: 5,
         url: 'https://bomi87.github.io/Past_WX/'
       },
+
+      {
+  id: 'windy-airport-weather-check',
+  name: 'Windy airport weather check',
+  description: '공항 ICAO, Local Date/Time 기준으로 Windy 과거/예보 시간 링크 생성.',
+  category: 'WX',
+  icon: '<img src="https://bomi87.github.io/WINDY/windy-icon.png" alt="Windy icon" class="tool-custom-icon">',
+  tags: ['windy', 'weather', 'airport', 'wx'],
+  updated: '2026-05-05',
+  order: 5.1,
+  url: 'https://bomi87.github.io/WINDY/'
+},
 {
   id: 'amos-realtime',
   name: 'AMOS RealTime',
