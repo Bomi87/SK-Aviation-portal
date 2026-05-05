@@ -569,6 +569,7 @@
       <button id="manualLoginBtn" class="btn btn-primary" type="button" style="display:none; width:100%;">
         Google 계정으로 접속
       </button>
+      <div id="googleButtonWrap" style="display:none; margin-top:12px;"></div>
 
       <div id="authStatus" class="auth-status">
         자동 로그인 확인 중...
@@ -674,13 +675,37 @@ function setAuthStatus(message) {
 
 function showManualLogin(message) {
   const btn = document.getElementById("manualLoginBtn");
-  if (btn) btn.style.display = "inline-flex";
+  const googleButtonWrap = document.getElementById("googleButtonWrap");
+
+  if (btn) btn.style.display = "none";
 
   if (message) {
     setAuthStatus(message);
   }
-}
 
+  if (
+    window.google &&
+    google.accounts &&
+    google.accounts.id &&
+    googleButtonWrap
+  ) {
+    googleButtonWrap.style.display = "block";
+    googleButtonWrap.innerHTML = "";
+
+    google.accounts.id.renderButton(
+      googleButtonWrap,
+      {
+        theme: document.body.classList.contains("dark") ? "filled_black" : "outline",
+        size: "large",
+        width: 360,
+        text: "continue_with",
+        shape: "pill"
+      }
+    );
+  } else {
+    if (btn) btn.style.display = "inline-flex";
+  }
+}
 function showPortal(user) {
   CURRENT_USER = user;
   AUTH_READY = true;
@@ -773,11 +798,11 @@ function initGoogleAuth() {
 
   const manualBtn = document.getElementById("manualLoginBtn");
 
-  if (manualBtn) {
-    manualBtn.addEventListener("click", function () {
-      google.accounts.id.prompt();
-    });
-  }
+if (manualBtn) {
+  manualBtn.addEventListener("click", function () {
+    showManualLogin("Google 버튼을 눌러 접속해 주세요.");
+  });
+}
 
   if (!window.google || !google.accounts || !google.accounts.id) {
     if (!cachedUser) {
@@ -785,7 +810,7 @@ function initGoogleAuth() {
     }
     return;
   }
-
+google.accounts.id.cancel();
   google.accounts.id.initialize({
     client_id: GOOGLE_CLIENT_ID,
     callback: handleCredentialResponse,
