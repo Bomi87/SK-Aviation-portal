@@ -31,6 +31,26 @@ function portalShowApp(user) {
   if (appRoot) appRoot.style.display = "block";
 
   window.CURRENT_PORTAL_USER = user;
+
+  // 같은 브라우저 세션에서 빠르게 통과시키기
+  try {
+    sessionStorage.setItem("portalApproved", "true");
+  } catch (err) {}
+
+  // 일정 시간 동안 승인 캐시 저장
+  try {
+    if (user && user.email) {
+      localStorage.setItem(
+        PORTAL_AUTH_CONFIG.CACHE_KEY,
+        JSON.stringify({
+          email: user.email,
+          name: user.name || "",
+          picture: user.picture || "",
+          expiresAt: Date.now() + 1000 * 60 * 60 * 12
+        })
+      );
+    }
+  } catch (err) {}
 }
 
 function portalShowDenied(message) {
