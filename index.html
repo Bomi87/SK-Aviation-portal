@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>BOMI Operations Portal</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     :root {
       --bg: #f4f7fb;
@@ -458,7 +459,76 @@
     @keyframes loadingSpin {
       to { transform: rotate(360deg); }
     }
+.auth-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+}
 
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  padding: 26px;
+  text-align: center;
+}
+
+.auth-logo {
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  border-radius: 18px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  padding: 8px;
+  margin-bottom: 14px;
+}
+
+.auth-title {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.auth-desc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+
+.auth-status {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: 14px;
+  word-break: break-word;
+}
+
+.user-pill {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 11px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.user-pill.admin {
+  color: var(--primary);
+  background: var(--primary-soft);
+  border-color: transparent;
+}
     @media (max-width: 980px) {
       .hero { grid-template-columns: 1fr; }
       .controls { grid-template-columns: 1fr 1fr auto auto; }
@@ -486,7 +556,27 @@
   </style>
 </head>
 <body>
-  <div class="wrap">
+ <body>
+  <div id="authScreen" class="auth-screen">
+    <div class="auth-card">
+      <img src="SK_LOGO.png" alt="SK Aviation logo" class="auth-logo" />
+      <div class="auth-title">SK-Aviation Programs</div>
+      <div class="auth-desc">
+        Google 계정 승인 여부를 확인 중입니다.<br>
+        승인된 사용자만 포털을 사용할 수 있습니다.
+      </div>
+
+      <button id="manualLoginBtn" class="btn btn-primary" type="button" style="display:none; width:100%;">
+        Google 계정으로 접속
+      </button>
+
+      <div id="authStatus" class="auth-status">
+        자동 로그인 확인 중...
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap" id="portalApp" style="display:none;">
     <div class="topbar">
       <div class="brand">
         <img src="SK_LOGO.png" alt="SK Aviation logo" class="brand-logo" />
@@ -494,7 +584,10 @@
           <h1 class="brand-title">SK-Aviation Programs</h1>
         </div>
       </div>
-      <button class="icon-btn" id="themeToggle" title="테마 변경">🌙</button>
+     <div style="display:flex; align-items:center; gap:10px;">
+  <div id="userPill" class="user-pill"></div>
+  <button class="icon-btn" id="themeToggle" title="테마 변경">🌙</button>
+</div>
     </div>
 
     <section>
@@ -523,8 +616,138 @@
   </div>
 
   <script>
-    const ATIS_PROXY_URL = 'https://script.google.com/macros/s/AKfycbzAi6T2g512uynDGuvhCTQUcz6wZ_gV6J8p0miphm23gkvh-z3VhK1A5Cxm4rUOe1up7A/exec';
+    const GOOGLE_CLIENT_ID = "434108168386-jn8hp4mflhn68n98n6m9r1nm6iv7b3qe.apps.googleusercontent.com";
+const AUTH_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhmGUMjmxVpIhKb85hr1VoUYsq7pdNHu8NG6GGHvOGPmLxZXLlMbhxtTViZlXLRcMp/exec";
 
+let CURRENT_USER = null;
+let AUTH_READY = false;
+    const ATIS_PROXY_URL = 'https://script.google.com/macros/s/AKfycbzAi6T2g512uynDGuvhCTQUcz6wZ_gV6J8p0miphm23gkvh-z3VhK1A5Cxm4rUOe1up7A/exec';
+function setAuthStatus(message) {
+  const el = document.getElementById("authStatus");
+  if (el) el.textContent = message || "";
+}
+
+function showManualLogin(message) {
+  const btn = document.getElementById("manualLoginBtn");
+  if (btn) btn.style.display = "inline-flex";
+
+  if (message) {
+    setAuthStatus(message);
+  }
+}
+
+function showPortal(user) {
+  CURRENT_USER = user;
+  AUTH_READY = true;
+
+  const authScreen = document.getElementById("authScreen");
+  const portalApp = document.getElementById("portalApp");
+  const userPill = document.getElementById("userPill");
+
+  if (authScreen) authScreen.style.display = "none";
+  if (portalApp) portalApp.style.display = "block";
+
+  if (userPill && user) {
+    const role = String(user.role || "USER").toUpperCase();
+    const email = user.email || "";
+
+    userPill.textContent = role === "ADMIN"
+      ? `ADMIN · ${email}`
+      : `USER · ${email}`;
+
+    userPill.classList.toggle("admin", role === "ADMIN");
+    userPill.style.display = "inline-flex";
+  }
+}
+
+function denyPortal(result) {
+  const reason = result && result.reason ? result.reason : "UNKNOWN";
+
+  let message = "승인되지 않은 계정입니다. 관리자 승인 후 사용 가능합니다.";
+
+  if (reason === "NOT_APPROVED") {
+    message = `승인되지 않은 계정입니다.\n계정: ${result.email || ""}`;
+  } else if (reason === "INVALID_AUDIENCE") {
+    message = "Google Client ID가 일치하지 않습니다. 설정을 확인해 주세요.";
+  } else if (reason === "EMAIL_NOT_VERIFIED") {
+    message = "Google 이메일 인증이 완료되지 않은 계정입니다.";
+  } else if (reason === "SERVER_ERROR") {
+    message = "승인 서버 오류입니다. Apps Script 설정을 확인해 주세요.";
+  }
+
+  showManualLogin(message);
+}
+
+async function checkPortalApproval(idToken) {
+  setAuthStatus("승인 목록 확인 중...");
+
+  const res = await fetch(AUTH_SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      idToken: idToken
+    })
+  });
+
+  if (!res.ok) {
+    throw new Error("승인 서버 응답 오류 HTTP " + res.status);
+  }
+
+  return await res.json();
+}
+
+async function handleCredentialResponse(response) {
+  try {
+    if (!response || !response.credential) {
+      showManualLogin("Google 로그인 정보를 가져오지 못했습니다.");
+      return;
+    }
+
+    const result = await checkPortalApproval(response.credential);
+
+    if (result.ok === true) {
+      showPortal(result);
+      return;
+    }
+
+    denyPortal(result);
+
+  } catch (err) {
+    console.error(err);
+    showManualLogin("승인 확인 중 오류가 발생했습니다. 다시 접속해 주세요.");
+  }
+}
+
+function initGoogleAuth() {
+  const manualBtn = document.getElementById("manualLoginBtn");
+
+  if (manualBtn) {
+    manualBtn.addEventListener("click", function () {
+      google.accounts.id.prompt();
+    });
+  }
+
+  if (!window.google || !google.accounts || !google.accounts.id) {
+    showManualLogin("Google 로그인 모듈을 불러오지 못했습니다. 새로고침해 주세요.");
+    return;
+  }
+
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleCredentialResponse,
+    auto_select: true,
+    cancel_on_tap_outside: false
+  });
+
+  google.accounts.id.prompt(function (notification) {
+    if (
+      notification.isNotDisplayed() ||
+      notification.isSkippedMoment() ||
+      notification.isDismissedMoment()
+    ) {
+      showManualLogin("자동 확인이 안 되면 아래 버튼을 눌러 접속해 주세요.");
+    }
+  });
+}
     const ICAO_TO_IATA = {
       KABI: 'ABI',
       KSPI: 'SPI',
@@ -1602,10 +1825,14 @@ function askAirportCode(title = 'Airport Code Input', desc = 'ICAO 또는 IATA �
 refreshBtn.addEventListener('click', () => {
   location.reload();
 });
-    populateCategoryControls();
-    initTheme();
-    updateStats();
-    renderTools();
+   populateCategoryControls();
+initTheme();
+updateStats();
+renderTools();
+
+window.addEventListener("load", function () {
+  initGoogleAuth();
+});
 
     window.toggleFavorite = toggleFavorite;
 
