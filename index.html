@@ -556,7 +556,6 @@
   </style>
 </head>
 <body>
-
   <div id="authScreen" class="auth-screen">
     <div class="auth-card">
       <img src="SK_LOGO.png" alt="SK Aviation logo" class="auth-logo" />
@@ -618,218 +617,270 @@
 
   <script>
     const GOOGLE_CLIENT_ID = "434108168386-jn8hp4mflhn68n98n6m9r1nm6iv7b3qe.apps.googleusercontent.com";
-const AUTH_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhmGUMjmxVpIhKb85hr1VoUYsq7pdNHu8NG6GGHvOGPmLxZXLlMbhxtTViZlXLRcMp/exec";
-
-let CURRENT_USER = null;
-let AUTH_READY = false;
-    const PORTAL_AUTH_CACHE_KEY = "bomiPortalAuthCache";
-const PORTAL_AUTH_CACHE_HOURS = 24; // 24시간 동안 자동 접속
+    const AUTH_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzsrwlp7d0nuS12wNoiktOPbme6D4DY-56de940tKKaRu5nW04iEJxlBr5azPbIa8O4/exec";
     const ATIS_PROXY_URL = 'https://script.google.com/macros/s/AKfycbzAi6T2g512uynDGuvhCTQUcz6wZ_gV6J8p0miphm23gkvh-z3VhK1A5Cxm4rUOe1up7A/exec';
+
+    let CURRENT_USER = null;
+    let AUTH_READY = false;
+
+    // 승인 성공 기록을 브라우저에 저장해서 다음 접속부터 빠르게 포털 표시
+    const PORTAL_AUTH_CACHE_KEY = "bomiPortalAuthCache";
+    const PORTAL_AUTH_CACHE_HOURS = 24 * 7; // 7일. 30일은 24 * 30 으로 변경
+
     function saveAuthCache(user) {
-  try {
-    const expiresAt = Date.now() + PORTAL_AUTH_CACHE_HOURS * 60 * 60 * 1000;
+      try {
+        const expiresAt = Date.now() + PORTAL_AUTH_CACHE_HOURS * 60 * 60 * 1000;
 
-    localStorage.setItem(PORTAL_AUTH_CACHE_KEY, JSON.stringify({
-      email: user.email || "",
-      role: user.role || "USER",
-      name: user.name || "",
-      expiresAt: expiresAt
-    }));
-  } catch (err) {
-    console.warn("Auth cache save failed", err);
-  }
-}
-
-function loadAuthCache() {
-  try {
-    const raw = localStorage.getItem(PORTAL_AUTH_CACHE_KEY);
-    if (!raw) return null;
-
-    const cached = JSON.parse(raw);
-
-    if (!cached.expiresAt || Date.now() > cached.expiresAt) {
-      localStorage.removeItem(PORTAL_AUTH_CACHE_KEY);
-      return null;
-    }
-
-    if (!cached.email) {
-      localStorage.removeItem(PORTAL_AUTH_CACHE_KEY);
-      return null;
-    }
-
-    return cached;
-
-  } catch (err) {
-    localStorage.removeItem(PORTAL_AUTH_CACHE_KEY);
-    return null;
-  }
-}
-
-function clearAuthCache() {
-  localStorage.removeItem(PORTAL_AUTH_CACHE_KEY);
-}
-function setAuthStatus(message) {
-  const el = document.getElementById("authStatus");
-  if (el) el.textContent = message || "";
-}
-
-function showManualLogin(message) {
-  const btn = document.getElementById("manualLoginBtn");
-  const googleButtonWrap = document.getElementById("googleButtonWrap");
-
-  if (btn) btn.style.display = "none";
-
-  if (message) {
-    setAuthStatus(message);
-  }
-
-  if (
-    window.google &&
-    google.accounts &&
-    google.accounts.id &&
-    googleButtonWrap
-  ) {
-    googleButtonWrap.style.display = "block";
-    googleButtonWrap.innerHTML = "";
-
-    google.accounts.id.renderButton(
-      googleButtonWrap,
-      {
-        theme: document.body.classList.contains("dark") ? "filled_black" : "outline",
-        size: "large",
-        width: 360,
-        text: "continue_with",
-        shape: "pill"
-      }
-    );
-  } else {
-    if (btn) btn.style.display = "inline-flex";
-  }
-}
-function showPortal(user) {
-  CURRENT_USER = user;
-  AUTH_READY = true;
-   saveAuthCache(user);
-
-  const authScreen = document.getElementById("authScreen");
-  const portalApp = document.getElementById("portalApp");
-  const userPill = document.getElementById("userPill");
-
-  if (authScreen) authScreen.style.display = "none";
-  if (portalApp) portalApp.style.display = "block";
-
-  if (userPill && user) {
-    const role = String(user.role || "USER").toUpperCase();
-    const email = user.email || "";
-
-    userPill.textContent = role === "ADMIN"
-      ? `ADMIN · ${email}`
-      : `USER · ${email}`;
-
-    userPill.classList.toggle("admin", role === "ADMIN");
-    userPill.style.display = "inline-flex";
-  }
-}
-
-function denyPortal(result) {
-  clearAuthCache();
-  const reason = result && result.reason ? result.reason : "UNKNOWN";
-
-  let message = "승인되지 않은 계정입니다. 관리자 승인 후 사용 가능합니다.";
-
-  if (reason === "NOT_APPROVED") {
-    message = `승인되지 않은 계정입니다.\n계정: ${result.email || ""}`;
-  } else if (reason === "INVALID_AUDIENCE") {
-    message = "Google Client ID가 일치하지 않습니다. 설정을 확인해 주세요.";
-  } else if (reason === "EMAIL_NOT_VERIFIED") {
-    message = "Google 이메일 인증이 완료되지 않은 계정입니다.";
-  } else if (reason === "SERVER_ERROR") {
-    message = "승인 서버 오류입니다. Apps Script 설정을 확인해 주세요.";
-  }
-
-  showManualLogin(message);
-}
-
-async function checkPortalApproval(idToken) {
-  setAuthStatus("승인 목록 확인 중...");
-
-  const res = await fetch(AUTH_SCRIPT_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      idToken: idToken
-    })
-  });
-
-  if (!res.ok) {
-    throw new Error("승인 서버 응답 오류 HTTP " + res.status);
-  }
-
-  return await res.json();
-}
-
-async function handleCredentialResponse(response) {
-  try {
-    if (!response || !response.credential) {
-      showManualLogin("Google 로그인 정보를 가져오지 못했습니다.");
-      return;
-    }
-
-    const result = await checkPortalApproval(response.credential);
-
-    if (result.ok === true) {
-      showPortal(result);
-      return;
-    }
-
-    denyPortal(result);
-
-  } catch (err) {
-    console.error(err);
-    showManualLogin("승인 확인 중 오류가 발생했습니다. 다시 접속해 주세요.");
-  }
-}
-
-function initGoogleAuth() {
-  const cachedUser = loadAuthCache();
-
-  if (cachedUser) {
-    showPortal(cachedUser);
-  }
-
-  const manualBtn = document.getElementById("manualLoginBtn");
-
-if (manualBtn) {
-  manualBtn.addEventListener("click", function () {
-    showManualLogin("Google 버튼을 눌러 접속해 주세요.");
-  });
-}
-
-  if (!window.google || !google.accounts || !google.accounts.id) {
-    if (!cachedUser) {
-      showManualLogin("Google 로그인 모듈을 불러오지 못했습니다. 새로고침해 주세요.");
-    }
-    return;
-  }
-google.accounts.id.cancel();
-  google.accounts.id.initialize({
-    client_id: GOOGLE_CLIENT_ID,
-    callback: handleCredentialResponse,
-    auto_select: true,
-    cancel_on_tap_outside: false
-  });
-
-  google.accounts.id.prompt(function (notification) {
-    if (
-      notification.isNotDisplayed() ||
-      notification.isSkippedMoment() ||
-      notification.isDismissedMoment()
-    ) {
-      if (!cachedUser) {
-        showManualLogin("자동 확인이 안 되면 아래 버튼을 눌러 접속해 주세요.");
+        localStorage.setItem(PORTAL_AUTH_CACHE_KEY, JSON.stringify({
+          email: user.email || "",
+          role: user.role || "USER",
+          name: user.name || "",
+          expiresAt: expiresAt
+        }));
+      } catch (err) {
+        console.warn("Auth cache save failed", err);
       }
     }
-  });
-}
+
+    function loadAuthCache() {
+      try {
+        const raw = localStorage.getItem(PORTAL_AUTH_CACHE_KEY);
+        if (!raw) return null;
+
+        const cached = JSON.parse(raw);
+
+        if (!cached.expiresAt || Date.now() > cached.expiresAt) {
+          localStorage.removeItem(PORTAL_AUTH_CACHE_KEY);
+          return null;
+        }
+
+        if (!cached.email) {
+          localStorage.removeItem(PORTAL_AUTH_CACHE_KEY);
+          return null;
+        }
+
+        return cached;
+      } catch (err) {
+        localStorage.removeItem(PORTAL_AUTH_CACHE_KEY);
+        return null;
+      }
+    }
+
+    function clearAuthCache() {
+      localStorage.removeItem(PORTAL_AUTH_CACHE_KEY);
+    }
+
+    // 캐시로 빠르게 접속한 것도 AccessLog에 남기기 위한 호출
+    // Apps Script doPost(e)에 mode === "CACHE_LOG" 처리가 추가되어 있어야 함
+    function logCachedAccess(user) {
+      try {
+        fetch(AUTH_SCRIPT_URL, {
+          method: "POST",
+          keepalive: true,
+          body: JSON.stringify({
+            mode: "CACHE_LOG",
+            email: user.email || "",
+            role: user.role || "",
+            name: user.name || ""
+          })
+        });
+      } catch (err) {
+        console.warn("Cache access log failed", err);
+      }
+    }
+
+    function setAuthStatus(message) {
+      const el = document.getElementById("authStatus");
+      if (el) el.textContent = message || "";
+    }
+
+    function showManualLogin(message) {
+      const btn = document.getElementById("manualLoginBtn");
+      const googleButtonWrap = document.getElementById("googleButtonWrap");
+
+      if (btn) btn.style.display = "none";
+
+      if (message) {
+        setAuthStatus(message);
+      }
+
+      if (
+        window.google &&
+        google.accounts &&
+        google.accounts.id &&
+        googleButtonWrap
+      ) {
+        googleButtonWrap.style.display = "block";
+        googleButtonWrap.innerHTML = "";
+
+        google.accounts.id.renderButton(
+          googleButtonWrap,
+          {
+            theme: document.body.classList.contains("dark") ? "filled_black" : "outline",
+            size: "large",
+            width: 360,
+            text: "continue_with",
+            shape: "pill"
+          }
+        );
+      } else {
+        if (btn) btn.style.display = "inline-flex";
+      }
+    }
+
+    function showPortal(user) {
+      CURRENT_USER = user;
+      AUTH_READY = true;
+
+      saveAuthCache(user);
+
+      const authScreen = document.getElementById("authScreen");
+      const portalApp = document.getElementById("portalApp");
+      const userPill = document.getElementById("userPill");
+
+      if (authScreen) authScreen.style.display = "none";
+      if (portalApp) portalApp.style.display = "block";
+
+      if (userPill && user) {
+        const role = String(user.role || "USER").toUpperCase();
+        const email = user.email || "";
+
+        userPill.textContent = role === "ADMIN"
+          ? `ADMIN · ${email}`
+          : `USER · ${email}`;
+
+        userPill.classList.toggle("admin", role === "ADMIN");
+        userPill.style.display = "inline-flex";
+      }
+    }
+
+    function denyPortal(result) {
+      clearAuthCache();
+
+      const authScreen = document.getElementById("authScreen");
+      const portalApp = document.getElementById("portalApp");
+
+      if (portalApp) portalApp.style.display = "none";
+      if (authScreen) authScreen.style.display = "flex";
+
+      const reason = result && result.reason ? result.reason : "UNKNOWN";
+
+      let message = "승인되지 않은 계정입니다. 관리자 승인 후 사용 가능합니다.";
+
+      if (reason === "NOT_APPROVED") {
+        message = `승인되지 않은 계정입니다.
+계정: ${result.email || ""}`;
+      } else if (reason === "INVALID_AUDIENCE") {
+        message = "Google Client ID가 일치하지 않습니다. 설정을 확인해 주세요.";
+      } else if (reason === "EMAIL_NOT_VERIFIED") {
+        message = "Google 이메일 인증이 완료되지 않은 계정입니다.";
+      } else if (reason === "SERVER_ERROR") {
+        message = "승인 서버 오류입니다. Apps Script 설정을 확인해 주세요.";
+      }
+
+      showManualLogin(message);
+    }
+
+    async function checkPortalApproval(idToken) {
+      if (!AUTH_READY) {
+        setAuthStatus("승인 목록 확인 중...");
+      }
+
+      const res = await fetch(AUTH_SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          idToken: idToken
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error("승인 서버 응답 오류 HTTP " + res.status);
+      }
+
+      return await res.json();
+    }
+
+    async function handleCredentialResponse(response) {
+      try {
+        if (!response || !response.credential) {
+          if (!AUTH_READY) {
+            showManualLogin("Google 로그인 정보를 가져오지 못했습니다.");
+          }
+          return;
+        }
+
+        if (!AUTH_READY) {
+          setAuthStatus("승인 목록 확인 중...");
+        }
+
+        const result = await checkPortalApproval(response.credential);
+
+        if (result.ok === true) {
+          showPortal(result);
+          return;
+        }
+
+        clearAuthCache();
+        denyPortal(result);
+
+      } catch (err) {
+        console.error(err);
+
+        // 이미 캐시로 포털에 들어간 상태면 일시적 서버 오류 때문에 화면을 막지 않음
+        if (!AUTH_READY) {
+          showManualLogin("승인 확인 중 오류가 발생했습니다. 다시 접속해 주세요.");
+        }
+      }
+    }
+
+    function initGoogleAuth() {
+      const cachedUser = loadAuthCache();
+
+      // 캐시가 있으면 포털 즉시 표시 + 접속 로그 기록
+      if (cachedUser) {
+        showPortal(cachedUser);
+        logCachedAccess(cachedUser);
+      }
+
+      const manualBtn = document.getElementById("manualLoginBtn");
+
+      if (manualBtn) {
+        manualBtn.addEventListener("click", function () {
+          showManualLogin("Google 버튼을 눌러 접속해 주세요.");
+        });
+      }
+
+      if (!window.google || !google.accounts || !google.accounts.id) {
+        if (!cachedUser) {
+          showManualLogin("Google 로그인 모듈을 불러오지 못했습니다. 새로고침해 주세요.");
+        }
+        return;
+      }
+
+      google.accounts.id.cancel();
+
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleCredentialResponse,
+        auto_select: true,
+        cancel_on_tap_outside: false
+      });
+
+      // 캐시가 없는 첫 사용자만 One Tap / Google 버튼 표시
+      // 캐시 사용자는 이미 포털을 보고 있고, 아래 호출은 뒤에서 재확인 용도
+      google.accounts.id.prompt(function (notification) {
+        if (
+          notification.isNotDisplayed() ||
+          notification.isSkippedMoment() ||
+          notification.isDismissedMoment()
+        ) {
+          if (!cachedUser) {
+            showManualLogin("자동 확인이 안 되면 아래 Google 버튼으로 접속해 주세요.");
+          }
+        }
+      });
+    }
+
     const ICAO_TO_IATA = {
       KABI: 'ABI',
       KSPI: 'SPI',
