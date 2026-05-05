@@ -510,7 +510,20 @@
   margin-top: 14px;
   word-break: break-word;
 }
+#googleButtonWrap {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
 
+#googleButtonWrap > div {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+#googleButtonWrap iframe {
+  max-width: 100% !important;
+}
 .user-pill {
   display: none;
   align-items: center;
@@ -723,40 +736,41 @@ function showInAppBrowserNotice() {
       if (el) el.textContent = message || "";
     }
 
-    function showManualLogin(message) {
-      const btn = document.getElementById("manualLoginBtn");
-      const googleButtonWrap = document.getElementById("googleButtonWrap");
+function showManualLogin(message) {
+  const btn = document.getElementById("manualLoginBtn");
+  const googleButtonWrap = document.getElementById("googleButtonWrap");
 
-      if (btn) btn.style.display = "none";
+  if (btn) btn.style.display = "none";
 
-      if (message) {
-        setAuthStatus(message);
+  if (message) {
+    setAuthStatus(message);
+  }
+
+  if (
+    window.google &&
+    google.accounts &&
+    google.accounts.id &&
+    googleButtonWrap
+  ) {
+    googleButtonWrap.style.display = "block";
+    googleButtonWrap.innerHTML = "";
+
+    const buttonWidth = Math.max(240, Math.min(300, window.innerWidth - 80));
+
+    google.accounts.id.renderButton(
+      googleButtonWrap,
+      {
+        theme: document.body.classList.contains("dark") ? "filled_black" : "outline",
+        size: "large",
+        width: buttonWidth,
+        text: "continue_with",
+        shape: "pill"
       }
-
-      if (
-        window.google &&
-        google.accounts &&
-        google.accounts.id &&
-        googleButtonWrap
-      ) {
-        googleButtonWrap.style.display = "block";
-        googleButtonWrap.innerHTML = "";
-
-        google.accounts.id.renderButton(
-          googleButtonWrap,
-          {
-            theme: document.body.classList.contains("dark") ? "filled_black" : "outline",
-            size: "large",
-            width: 360,
-            text: "continue_with",
-            shape: "pill"
-          }
-        );
-      } else {
-        if (btn) btn.style.display = "inline-flex";
-      }
-    }
-
+    );
+  } else {
+    if (btn) btn.style.display = "inline-flex";
+  }
+}
     function showPortal(user) {
       CURRENT_USER = user;
       AUTH_READY = true;
