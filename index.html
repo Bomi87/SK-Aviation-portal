@@ -547,7 +547,26 @@
   .controls { grid-template-columns: 1fr; }
   .tool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-    @media (max-width: 680px) {
+@media (max-width: 680px) {
+  .controls {
+    margin-bottom: 8px;
+  }
+
+  .chips {
+    gap: 5px;
+    margin-bottom: 8px;
+  }
+
+  .chip {
+    padding: 5px 9px;
+    font-size: 11.5px !important;
+    border-radius: 999px;
+  }
+
+  .section-head {
+    margin: 10px 0 8px;
+  }
+}
       .wrap { padding: 14px; }
       h1 { font-size: 26px; }
      .topbar {
@@ -556,6 +575,7 @@
   margin-bottom: 12px;
 }
 
+      
 .brand {
   gap: 8px;
 }
