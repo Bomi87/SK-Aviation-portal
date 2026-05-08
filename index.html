@@ -548,25 +548,25 @@
   .tool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 680px) {
-  .controls {
-    margin-bottom: 8px;
-  }
-
-  .chips {
-    gap: 5px;
-    margin-bottom: 8px;
-  }
-
-  .chip {
-    padding: 5px 9px;
-    font-size: 11.5px !important;
-    border-radius: 999px;
-  }
-
-  .section-head {
-    margin: 10px 0 8px;
-  }
+.controls {
+  display: none;
 }
+
+.chips {
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.chip {
+  padding: 5px 9px;
+  font-size: 11.5px !important;
+  border-radius: 999px;
+}
+
+.section-head {
+  margin: 10px 0 8px;
+}
+
       .wrap { padding: 14px; }
       h1 { font-size: 26px; }
      .topbar {
@@ -653,17 +653,9 @@
 </div>
     </div>
 
-    <section>
-      <div class="controls">
- 
-        <div class="field">
-          <select id="categorySelect">
-            <option value="all">All Categories</option>
-          </select>
-        </div>
-      </div>
-      <div class="chips" id="categoryChips"></div>
-    </section>
+<section>
+  <div class="chips" id="categoryChips"></div>
+</section>
 
     <section>
   <div class="section-head">
@@ -1480,7 +1472,7 @@ function showPortal(user) {
     ];
 
     const searchInput = document.getElementById('searchInput');
-    const categorySelect = document.getElementById('categorySelect');
+ const categorySelect = document.getElementById('categorySelect');
     const categoryChips = document.getElementById('categoryChips');
     const toolGrid = document.getElementById('toolGrid');
     const emptyState = document.getElementById('emptyState');
@@ -1527,25 +1519,32 @@ function categories() {
   const existing = [...new Set(tools.map(t => t.category))];
   return preferredOrder.filter(cat => existing.includes(cat));
 }
-    function populateCategoryControls() {
-      const cats = categories();
-      categorySelect.innerHTML = '<option value="all">All</option>' +
-        cats.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+  function populateCategoryControls() {
+  const cats = categories();
 
-      categoryChips.innerHTML = [
-        '<button class="chip active" data-category="all">All</button>',
-        ...cats.map(cat => `<button class="chip" data-category="${cat}">${cat}</button>`)
-      ].join('');
+  if (categorySelect) {
+    categorySelect.innerHTML = '<option value="all">All</option>' +
+      cats.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+  }
 
-      categoryChips.querySelectorAll('.chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-          activeCategory = chip.dataset.category;
-          categorySelect.value = activeCategory;
-          updateActiveChips();
-          renderTools();
-        });
-      });
-    }
+  categoryChips.innerHTML = [
+    '<button class="chip active" data-category="all">All</button>',
+    ...cats.map(cat => `<button class="chip" data-category="${cat}">${cat}</button>`)
+  ].join('');
+
+  categoryChips.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      activeCategory = chip.dataset.category;
+
+      if (categorySelect) {
+        categorySelect.value = activeCategory;
+      }
+
+      updateActiveChips();
+      renderTools();
+    });
+  });
+}
 
     function updateActiveChips() {
       categoryChips.querySelectorAll('.chip').forEach(chip => {
@@ -2061,11 +2060,13 @@ function askAirportCode(title = 'Airport Code Input', desc = 'ICAO 또는 IATA �
    if (searchInput) {
   searchInput.addEventListener('input', renderTools);
 }
-    categorySelect.addEventListener('change', () => {
-      activeCategory = categorySelect.value;
-      updateActiveChips();
-      renderTools();
-    });
+   if (categorySelect) {
+  categorySelect.addEventListener('change', () => {
+    activeCategory = categorySelect.value;
+    updateActiveChips();
+    renderTools();
+  });
+}
 
     themeToggle.addEventListener('click', () => {
       setTheme(document.body.classList.contains('dark') ? 'light' : 'dark');
