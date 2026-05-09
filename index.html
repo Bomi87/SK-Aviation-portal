@@ -1492,12 +1492,27 @@ function showPortal(user) {
     const themeToggle = document.getElementById('themeToggle');
 const refreshBtn = document.getElementById('refreshBtn');
     
-    const FAVORITE_KEY = 'toolPortalFavorites';
-    const THEME_KEY = 'toolPortalTheme';
+  const FAVORITE_KEY = 'toolPortalFavorites';
+const THEME_KEY = 'toolPortalTheme';
+const ACTIVE_CATEGORY_KEY = 'toolPortalActiveCategory';
 
-    let favorites = loadFavorites();
-    let activeCategory = 'all';
-    let favoritesOnly = false;
+let favorites = loadFavorites();
+let activeCategory = loadActiveCategory();
+let favoritesOnly = false;
+
+function loadActiveCategory() {
+  try {
+    return localStorage.getItem(ACTIVE_CATEGORY_KEY) || 'all';
+  } catch (err) {
+    return 'all';
+  }
+}
+
+function saveActiveCategory() {
+  try {
+    localStorage.setItem(ACTIVE_CATEGORY_KEY, activeCategory);
+  } catch (err) {}
+}
 
     function loadFavorites() {
       try { return JSON.parse(localStorage.getItem(FAVORITE_KEY) || '[]'); }
@@ -1539,22 +1554,36 @@ function categories() {
       cats.map(cat => `<option value="${cat}">${cat}</option>`).join('');
   }
 
-  categoryChips.innerHTML = [
-    '<button class="chip active" data-category="all">All</button>',
-    ...cats.map(cat => `<button class="chip" data-category="${cat}">${cat}</button>`)
-  ].join('');
+if (activeCategory !== 'all' && !cats.includes(activeCategory)) {
+  activeCategory = 'all';
+  saveActiveCategory();
+}
+
+categoryChips.innerHTML = [
+  `<button class="chip ${activeCategory === 'all' ? 'active' : ''}" data-category="all">All</button>`,
+  ...cats.map(cat => `
+    <button class="chip ${activeCategory === cat ? 'active' : ''}" data-category="${cat}">
+      ${cat}
+    </button>
+  `)
+].join('');
+
+if (categorySelect) {
+  categorySelect.value = activeCategory;
+}
 
   categoryChips.querySelectorAll('.chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      activeCategory = chip.dataset.category;
+   chip.addEventListener('click', () => {
+  activeCategory = chip.dataset.category;
+  saveActiveCategory();
 
-      if (categorySelect) {
-        categorySelect.value = activeCategory;
-      }
+  if (categorySelect) {
+    categorySelect.value = activeCategory;
+  }
 
-      updateActiveChips();
-      renderTools();
-    });
+  updateActiveChips();
+  renderTools();
+});
   });
 }
 
@@ -2073,11 +2102,13 @@ function askAirportCode(title = 'Airport Code Input', desc = 'ICAO 또는 IATA �
   searchInput.addEventListener('input', renderTools);
 }
    if (categorySelect) {
-  categorySelect.addEventListener('change', () => {
-    activeCategory = categorySelect.value;
-    updateActiveChips();
-    renderTools();
-  });
+ categorySelect.addEventListener('change', () => {
+  activeCategory = categorySelect.value;
+  saveActiveCategory();
+
+  updateActiveChips();
+  renderTools();
+});
 }
 
     themeToggle.addEventListener('click', () => {
