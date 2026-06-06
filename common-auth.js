@@ -1,8 +1,10 @@
 const PORTAL_AUTH_CONFIG = {
   GOOGLE_CLIENT_ID: "434108168386-jn8hp4mflhn68n98n6m9r1nm6iv7b3qe.apps.googleusercontent.com",
   AUTH_SCRIPT_URL: "https://script.google.com/macros/s/AKfycby-Pd2UTs67a3omoacvOjnQMJzqBxkDsvoXhANl9G09o5CyZN1Y3rQjt8P4Xp4anLbU/exec",
-  CACHE_KEY: "bomiPortalAuthCache"
+  CACHE_KEY: "bomiPortalAuthCache",
+  CACHE_HOURS: 24 * 30
 };
+let PORTAL_AUTH_STARTED = false;
 
 function portalLoadAuthCache() {
   try {
@@ -46,7 +48,7 @@ function portalShowApp(user) {
           email: user.email,
           name: user.name || "",
           picture: user.picture || "",
-          expiresAt: Date.now() + 1000 * 60 * 60 * 12
+         expiresAt: Date.now() + 1000 * 60 * 60 * PORTAL_AUTH_CONFIG.CACHE_HOURS
         })
       );
     }
@@ -164,6 +166,16 @@ function startPortalAuth() {
     return;
   }
 
+  // Google 로그인 모듈이 아직 안 불러와졌으면 기다렸다가 다시 실행
+  if (!window.google || !google.accounts || !google.accounts.id) {
+    setTimeout(startPortalAuth, 300);
+    return;
+  }
+
+  // Google 모듈이 준비된 이후부터 중복 실행 방지
+  if (PORTAL_AUTH_STARTED) return;
+  PORTAL_AUTH_STARTED = true;
+
   const authScreen = document.getElementById("authScreen");
 
   if (authScreen) {
@@ -189,11 +201,6 @@ function startPortalAuth() {
         <div id="googleButtonWrap"></div>
       </div>
     `;
-  }
-
-  if (!window.google || !google.accounts || !google.accounts.id) {
-    setTimeout(startPortalAuth, 300);
-    return;
   }
 
   google.accounts.id.initialize({
