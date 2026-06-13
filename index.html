@@ -48,6 +48,8 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
       background: var(--bg);
       color: var(--text);
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
     }
     .wrap {
       max-width: 1220px;
@@ -146,8 +148,7 @@
     /* 모바일 input 클릭 시 자동 Zoom-in 방지 */
     input,
     select,
-    textarea,
-    button {
+    textarea {
       font-size: 16px !important;
     }
 
@@ -624,10 +625,77 @@
   border-radius: 12px;
 }
       .controls { grid-template-columns: 1fr; }
-      .tool-grid { grid-template-columns: 1fr; }
+      .tool-grid { grid-template-columns: 1fr; gap: 12px; }
       .stats { grid-template-columns: 1fr 1fr; }
-      .tool-card { min-height: unset; }
-      .tool-desc { min-height: unset; }
+
+      .section-title {
+        font-size: 20px;
+      }
+
+      .section-meta {
+        font-size: 13px;
+      }
+
+      .section-refresh-btn {
+        width: 34px;
+        height: 34px;
+        font-size: 15px !important;
+      }
+
+      .tool-card {
+        min-height: unset;
+        padding: 14px;
+        border-radius: 16px;
+      }
+
+      .tool-top {
+        margin-bottom: 10px;
+      }
+
+      .icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        font-size: 20px;
+      }
+
+      .tool-custom-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 7px;
+      }
+
+      .tool-title {
+        font-size: 18px;
+        margin-bottom: 6px;
+      }
+
+      .tool-desc {
+        min-height: unset;
+        font-size: 12px;
+        line-height: 1.45;
+        margin-bottom: 10px;
+      }
+
+      .badges {
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+
+      .badge {
+        font-size: 11px;
+        padding: 5px 8px;
+      }
+
+      .tool-footer .btn {
+        padding: 9px 12px;
+        font-size: 14px !important;
+        border-radius: 11px;
+      }
+
+      .fav-btn {
+        font-size: 20px;
+      }
     }
   </style>
 </head>
@@ -1351,7 +1419,6 @@ function showPortal(user) {
 },
 {
   id: 'awc-metar-taf',
-  name: 'METAR & TAF',
   name: 'METAR & TAF',
   description: 'ICAO 공항코드를 입력하면 METAR + TAF 조회 가능.',
   category: 'WX',
