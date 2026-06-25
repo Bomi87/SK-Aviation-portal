@@ -140,6 +140,8 @@
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
+      min-width: 0;
+      max-width: 100%;
     }
     .btn, .chip, .icon-btn, input, select {
       font: inherit;
@@ -214,6 +216,8 @@
     }
     .chip {
       border: 1px solid var(--line);
+      white-space: nowrap;
+      max-width: 100%;
       background: var(--panel);
       color: var(--text);
       padding: 9px 12px;
@@ -1350,15 +1354,39 @@ function showPortal(user) {
       },
 
 
+
       {
+        id: 'uas-trip-prep',
+        name: 'UAS Trip CHK',
+        description: 'UAS Trip 운항 준비사항 및 서비스 진행 현황 조회.',
+        category: 'Prep',
+        icon: '🧭',
+        tags: ['uas', 'trip', 'prep', 'service', 'operations'],
+        updated: '2026-06-25',
+        order: 2,
+        url: 'https://bomi87.github.io/UAS_TRIP/'
+      },
+      {
+        id: 'wfs-trip-prep',
+        name: 'WFS Trip CHK',
+        description: 'WFS Trip 운항 준비사항 및 서비스 진행 현황 조회.',
+        category: 'Prep',
+        icon: '🗂️',
+        tags: ['wfs', 'trip', 'prep', 'service', 'operations'],
+        updated: '2026-06-25',
+        order: 2.1,
+        url: 'https://bomi87.github.io/WFS_TRIP/'
+      },
+
+            {
   id: 'subscription-manager',
   name: 'Subscription Manager',
   description: '항공본부 계약 및 구독 현황 조회.\n계약기간, 비용, 만료 예정 항목을 확인.',
-  category: 'Crew',
+  category: 'Prep',
   icon: '📋',
   tags: ['subscription', 'contract', 'crew', 'expiry', 'cost'],
   updated: '2026-06-21',
-  order: 1.2,
+  order: 2.2,
   url: 'https://bomi87.github.io/SUBSCRIPTION/'
 },
       {
@@ -1369,7 +1397,7 @@ function showPortal(user) {
         icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.11.37 2.3.56 3.58.56a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.07 21 3 13.93 3 5a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.28.19 2.47.56 3.58a1 1 0 0 1-.24 1.01l-2.2 2.2Z" fill="#ec4899"/></svg>',
         tags: ['FBO', 'airport', 'ops'],
         updated: '2026-04-15',
-        order: 2,
+        order: 2.3,
         url: 'https://bomi87.github.io/FBO/'
       },
 
@@ -1682,7 +1710,7 @@ function saveActiveCategory() {
     }
 
 function categories() {
-  const preferredOrder = ['Crew', 'Airport', 'Fuel', 'WX', 'Tracking', 'FAA', 'News', 'Medical'];
+  const preferredOrder = ['Prep', 'Crew', 'Airport', 'Fuel', 'WX', 'Tracking', 'FAA', 'News', 'Medical'];
   const existing = [...new Set(tools.map(t => t.category))];
   return preferredOrder.filter(cat => existing.includes(cat));
 }
