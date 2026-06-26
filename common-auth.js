@@ -454,6 +454,29 @@ function renderPortalGoogleButton() {
    Apps Script 승인 확인
 ========================================================= */
 
+
+function portalLogCachedAccess(user, appId) {
+  try {
+    fetch(
+      PORTAL_AUTH_CONFIG.AUTH_SCRIPT_URL,
+      {
+        method: "POST",
+        keepalive: true,
+        body: JSON.stringify({
+          mode: "CACHE_LOG",
+          email: user && user.email ? user.email : "",
+          role: user && user.role ? user.role : "",
+          name: user && user.name ? user.name : "",
+          appId: appId || ""
+        })
+      }
+    ).catch(function () {});
+  } catch (err) {
+    console.warn("캐시 접속 로그 전송 실패", err);
+  }
+}
+
+
 async function portalCheckApproval(idToken, appId) {
   const res = await fetch(
     PORTAL_AUTH_CONFIG.AUTH_SCRIPT_URL,
@@ -584,6 +607,7 @@ function startPortalAuth() {
     portalCanAccessApp(cachedUser, appId)
   ) {
     portalShowApp(cachedUser, appId);
+    portalLogCachedAccess(cachedUser, appId);
     return;
   }
 
