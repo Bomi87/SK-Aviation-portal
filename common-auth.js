@@ -41,7 +41,7 @@ const PORTAL_AUTH_CONFIG = {
 
   // 인증용 Apps Script Web App URL
   AUTH_SCRIPT_URL:
-    "https://script.google.com/macros/s/AKfycbxj91RKmhnQwS-8MsVuTC0ccdcnEMupB9S5jXw4gZsYLDfxPYw23go4Mqq8Mkg5sSu9/exec",
+    "https://script.google.com/macros/s/AKfycbzLlWbfUkvKflGGMy7Z4W6dD8PVYGAGYIktA3urbvLX07AZqC7htH3IJH6-bmE6srxf/exec",
 
   // 같은 bomi87.github.io 도메인의 앱들이 공통으로 사용하는 로그인 캐시
   CACHE_KEY: "bomiPortalAuthCache",
