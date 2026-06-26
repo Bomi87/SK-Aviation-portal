@@ -1048,9 +1048,88 @@ function showPortal(user) {
       return await res.json();
     }
 
+
+    let PORTAL_PERMISSION_REFRESHING = false;
+    let PORTAL_PERMISSION_REFRESH_TIMER = null;
+
+    function setPermissionRefreshUi(isRefreshing) {
+      PORTAL_PERMISSION_REFRESHING = Boolean(isRefreshing);
+
+      if (!refreshBtn) return;
+
+      refreshBtn.disabled = PORTAL_PERMISSION_REFRESHING;
+      refreshBtn.textContent = PORTAL_PERMISSION_REFRESHING ? "⏳" : "🔄️";
+      refreshBtn.title = PORTAL_PERMISSION_REFRESHING
+        ? "승인 정보 다시 확인 중"
+        : "승인 정보 새로고침";
+    }
+
+    function finishPermissionRefresh() {
+      if (PORTAL_PERMISSION_REFRESH_TIMER) {
+        clearTimeout(PORTAL_PERMISSION_REFRESH_TIMER);
+        PORTAL_PERMISSION_REFRESH_TIMER = null;
+      }
+
+      setPermissionRefreshUi(false);
+    }
+
+    function refreshPortalPermissions() {
+      if (PORTAL_PERMISSION_REFRESHING) return;
+
+      if (
+        !window.google ||
+        !google.accounts ||
+        !google.accounts.id
+      ) {
+        alert("Google 로그인 모듈을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+        return;
+      }
+
+      // 현재 포털 화면은 그대로 유지하고 인증 정보만 뒤에서 다시 확인합니다.
+      // 따라서 인증 확인 중에도 화면이 공백으로 바뀌지 않습니다.
+      setPermissionRefreshUi(true);
+
+      try {
+        google.accounts.id.cancel();
+
+        google.accounts.id.prompt(function (notification) {
+          if (
+            notification.isNotDisplayed() ||
+            notification.isSkippedMoment() ||
+            notification.isDismissedMoment()
+          ) {
+            finishPermissionRefresh();
+
+            alert(
+              "Google 자동 인증을 완료하지 못했습니다. " +
+              "브라우저의 Google 로그인 상태를 확인한 뒤 다시 눌러 주세요."
+            );
+          }
+        });
+
+        PORTAL_PERMISSION_REFRESH_TIMER = setTimeout(function () {
+          if (!PORTAL_PERMISSION_REFRESHING) return;
+
+          finishPermissionRefresh();
+
+          alert(
+            "승인 정보 확인이 지연되고 있습니다. " +
+            "잠시 후 다시 시도해 주세요."
+          );
+        }, 10000);
+
+      } catch (err) {
+        console.error("Permission refresh failed", err);
+        finishPermissionRefresh();
+        alert("승인 정보를 다시 확인하지 못했습니다.");
+      }
+    }
+
     async function handleCredentialResponse(response) {
       try {
         if (!response || !response.credential) {
+          finishPermissionRefresh();
+
           if (!AUTH_READY) {
             showManualLogin("Google 로그인 정보를 가져오지 못했습니다.");
           }
@@ -1065,14 +1144,16 @@ function showPortal(user) {
 
         if (result.ok === true) {
           showPortal(result);
+          finishPermissionRefresh();
           return;
         }
 
-        clearAuthCache();
+        finishPermissionRefresh();
         denyPortal(result);
 
       } catch (err) {
         console.error(err);
+        finishPermissionRefresh();
 
         // 이미 캐시로 포털에 들어간 상태면 일시적 서버 오류 때문에 화면을 막지 않음
         if (!AUTH_READY) {
@@ -2452,13 +2533,8 @@ function askAirportCode(title = 'Airport Code Input', desc = 'ICAO 또는 IATA �
       setTheme(document.body.classList.contains('dark') ? 'light' : 'dark');
     });
 refreshBtn.addEventListener("click", function () {
-  clearAuthCache();
-
-  try {
-    sessionStorage.clear();
-  } catch (err) {}
-
-  location.reload();
+  savePortalReturnState();
+  refreshPortalPermissions();
 });
    populateCategoryControls();
 initTheme();
