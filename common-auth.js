@@ -2,24 +2,25 @@ const PORTAL_AUTH_CONFIG = {
   GOOGLE_CLIENT_ID:
     "434108168386-jn8hp4mflhn68n98n6m9r1nm6iv7b3qe.apps.googleusercontent.com",
 
-  // 새 배포 URL이 다르면 이 주소만 교체하세요.
+  // 인증용 Apps Script Web App URL
   AUTH_SCRIPT_URL:
     "https://script.google.com/macros/s/AKfycby-Pd2UTs67a3omoacvOjnQMJzqBxkDsvoXhANl9G09o5CyZN1Y3rQjt8P4Xp4anLbU/exec",
 
+  // 같은 bomi87.github.io 도메인의 앱들이 공통으로 사용하는 로그인 캐시
   CACHE_KEY: "bomiPortalAuthCache",
+
+  // Google 승인 팝업 반복 방지를 위한 로그인/권한 캐시 기간
   CACHE_HOURS: 24 * 30
 };
 
-/*
- * 포털 tools 배열의 id와 GitHub Pages 경로를 연결합니다.
- * common-auth.js를 사용하는 자체 GitHub Pages 앱만 등록합니다.
- *
- * 포털 내부에서 실행되는 action 앱:
- *   atis-guru, awc-metar-taf, faa-airport-status, ops-group-airport
- * 외부 사이트:
- *   amos-realtime, faa-rvr, faa-nas-status, ops-group-briefings
- * 위 항목들은 개별 페이지에 common-auth.js를 삽입할 수 없으므로 이 경로표 대상이 아닙니다.
- */
+
+/* =========================================================
+   앱 경로 ↔ 포털 APP ID 연결
+
+   포털 내부 action 앱과 외부 사이트는 여기에 넣지 않습니다.
+   common-auth.js를 직접 불러오는 GitHub Pages 앱만 등록합니다.
+========================================================= */
+
 const PORTAL_APP_RULES = [
   { id: "currency-checker", path: "/Currency/" },
   { id: "uas-trip-prep", path: "/UAS_TRIP/" },
@@ -35,23 +36,37 @@ const PORTAL_APP_RULES = [
   { id: "windy-airport-weather-check", path: "/WINDY/" },
   { id: "faa-artcc-advisory-map", path: "/FAA_ATCSCC/" },
   { id: "faa-cnd-diagram", path: "/U.S_Airport_Diagram/" },
+
+  // 동일 경로를 쿼리스트링으로 구분
   {
     id: "hl8080-route",
     path: "/FLIGHT_MAP/",
-    query: { key: "file", includes: "HL8080.kml" }
+    query: {
+      key: "file",
+      includes: "HL8080.kml"
+    }
   },
   {
     id: "hl8372-route",
     path: "/FLIGHT_MAP/",
-    query: { key: "file", includes: "HL8372.kml" }
+    query: {
+      key: "file",
+      includes: "HL8372.kml"
+    }
   },
+
   { id: "opsgroup-news", path: "/OPS_NEWS/" },
   { id: "hospital-search", path: "/Hospital/" },
   { id: "fbo-fee-lookup", path: "/FBO_Fees/" }
 ];
 
+
 let PORTAL_AUTH_STARTED = false;
 
+
+/* =========================================================
+   현재 페이지 APP ID 판별
+========================================================= */
 
 function portalNormalizePath(pathname) {
   let path = String(pathname || "/");
@@ -63,7 +78,7 @@ function portalNormalizePath(pathname) {
   if (!path.endsWith("/")) {
     const lastPart = path.split("/").pop() || "";
 
-    // index.html 같은 파일명이 아니면 디렉터리 경로로 취급
+    // index.html 같은 파일명이 아니면 디렉터리 경로로 처리
     if (!lastPart.includes(".")) {
       path += "/";
     }
@@ -77,13 +92,12 @@ function portalGetCurrentAppId() {
   const pathname = portalNormalizePath(window.location.pathname);
   const params = new URLSearchParams(window.location.search);
 
-  // 같은 /FLIGHT_MAP/ 경로를 사용하는 앱은 query 조건부터 확인
+  // 같은 경로를 사용하는 앱은 쿼리 조건을 먼저 확인
   const queryMatch = PORTAL_APP_RULES.find(function (rule) {
     if (!rule.query) return false;
     if (!pathname.startsWith(rule.path)) return false;
 
     const value = params.get(rule.query.key) || "";
-
     return value.includes(rule.query.includes);
   });
 
@@ -91,11 +105,12 @@ function portalGetCurrentAppId() {
     return queryMatch.id;
   }
 
-  // 그 외 앱은 경로가 긴 규칙부터 확인
+  // 일반 앱은 경로가 긴 규칙부터 확인
   const pathMatch = PORTAL_APP_RULES
     .filter(function (rule) {
       return !rule.query;
     })
+    .slice()
     .sort(function (a, b) {
       return b.path.length - a.path.length;
     })
@@ -106,6 +121,10 @@ function portalGetCurrentAppId() {
   return pathMatch ? pathMatch.id : "";
 }
 
+
+/* =========================================================
+   permissions 정리 및 앱 권한 확인
+========================================================= */
 
 function portalNormalizePermissions(value) {
   if (Array.isArray(value)) {
@@ -145,9 +164,14 @@ function portalCanAccessApp(user, appId) {
 }
 
 
+/* =========================================================
+   공통 로그인 캐시
+========================================================= */
+
 function portalLoadAuthCache() {
   try {
     const raw = localStorage.getItem(PORTAL_AUTH_CONFIG.CACHE_KEY);
+
     if (!raw) return null;
 
     const cached = JSON.parse(raw);
@@ -155,30 +179,36 @@ function portalLoadAuthCache() {
     if (
       !cached.email ||
       !cached.expiresAt ||
-      Date.now() > cached.expiresAt
+      Date.now() > Number(cached.expiresAt)
     ) {
       localStorage.removeItem(PORTAL_AUTH_CONFIG.CACHE_KEY);
       return null;
     }
 
-    const role = String(cached.role || "USER").toUpperCase();
+    const role = String(cached.role || "USER")
+      .trim()
+      .toUpperCase();
 
-    // 이전 형식의 USER 캐시에는 permissions가 없으므로 재로그인
+    // 이전 형식 캐시는 권한 목록이 없으므로 재로그인
     if (
       role !== "ADMIN" &&
-      cached.permissions === undefined
+      !Array.isArray(cached.permissions)
     ) {
       localStorage.removeItem(PORTAL_AUTH_CONFIG.CACHE_KEY);
       return null;
     }
 
-    cached.role = role;
-    cached.permissions =
-      role === "ADMIN"
-        ? ["*"]
-        : portalNormalizePermissions(cached.permissions);
-
-    return cached;
+    return {
+      email: String(cached.email || "").trim(),
+      role: role,
+      name: String(cached.name || ""),
+      picture: String(cached.picture || ""),
+      permissions:
+        role === "ADMIN"
+          ? ["*"]
+          : portalNormalizePermissions(cached.permissions),
+      expiresAt: Number(cached.expiresAt)
+    };
 
   } catch (err) {
     console.warn("인증 캐시 읽기 실패", err);
@@ -196,23 +226,22 @@ function portalSaveAuthCache(user) {
       .trim()
       .toUpperCase();
 
+    const expiresAt =
+      Date.now() +
+      PORTAL_AUTH_CONFIG.CACHE_HOURS * 60 * 60 * 1000;
+
     localStorage.setItem(
       PORTAL_AUTH_CONFIG.CACHE_KEY,
       JSON.stringify({
-        email: user.email || "",
+        email: String(user.email || "").trim(),
         role: role,
-        name: user.name || "",
-        picture: user.picture || "",
+        name: String(user.name || ""),
+        picture: String(user.picture || ""),
         permissions:
           role === "ADMIN"
             ? ["*"]
             : portalNormalizePermissions(user.permissions),
-        expiresAt:
-          Date.now() +
-          1000 *
-          60 *
-          60 *
-          PORTAL_AUTH_CONFIG.CACHE_HOURS
+        expiresAt: expiresAt
       })
     );
 
@@ -221,6 +250,10 @@ function portalSaveAuthCache(user) {
   }
 }
 
+
+/* =========================================================
+   현재 앱 세션 상태
+========================================================= */
 
 function portalClearSessionApproval() {
   try {
@@ -238,19 +271,25 @@ function portalSetSessionApproval(appId) {
 }
 
 
+/* =========================================================
+   인증 완료 알림
+========================================================= */
+
 function portalNotifyApproved(user, appId) {
   const detail = {
     user: user,
     appId: appId
   };
 
-  window.dispatchEvent(
-    new CustomEvent("portal-auth-approved", {
-      detail: detail
-    })
-  );
+  try {
+    window.dispatchEvent(
+      new CustomEvent("portal-auth-approved", {
+        detail: detail
+      })
+    );
+  } catch (err) {}
 
-  // 앱에서 이 콜백 방식을 사용해도 됨
+  // 각 앱이 window.startProtectedApp을 정의한 경우 인증 후 실행
   if (typeof window.startProtectedApp === "function") {
     try {
       window.startProtectedApp(detail);
@@ -261,6 +300,10 @@ function portalNotifyApproved(user, appId) {
 }
 
 
+/* =========================================================
+   앱 표시 / 차단
+========================================================= */
+
 function portalShowApp(user, appId) {
   if (!portalCanAccessApp(user, appId)) {
     portalClearSessionApproval();
@@ -270,7 +313,9 @@ function portalShowApp(user, appId) {
         "이 앱에 대한 사용 권한이 없습니다.",
         "관리자에게 앱 권한을 요청해 주세요.",
         user && user.email ? "계정: " + user.email : ""
-      ].filter(Boolean).join("<br>")
+      ]
+        .filter(Boolean)
+        .join("<br>")
     );
 
     return;
@@ -311,6 +356,9 @@ function portalShowApp(user, appId) {
 
 function portalShowDenied(message) {
   portalClearSessionApproval();
+
+  window.CURRENT_PORTAL_USER = null;
+  window.CURRENT_PORTAL_APP_ID = "";
 
   const authScreen = document.getElementById("authScreen");
   const appRoot = document.getElementById("appRoot");
@@ -363,8 +411,13 @@ function portalShowDenied(message) {
 }
 
 
+/* =========================================================
+   Google 로그인 버튼
+========================================================= */
+
 function renderPortalGoogleButton() {
   const wrap = document.getElementById("googleButtonWrap");
+
   if (!wrap) return;
 
   if (
@@ -397,6 +450,10 @@ function renderPortalGoogleButton() {
 }
 
 
+/* =========================================================
+   Apps Script 승인 확인
+========================================================= */
+
 async function portalCheckApproval(idToken, appId) {
   const res = await fetch(
     PORTAL_AUTH_CONFIG.AUTH_SCRIPT_URL,
@@ -418,6 +475,10 @@ async function portalCheckApproval(idToken, appId) {
   return await res.json();
 }
 
+
+/* =========================================================
+   Google 로그인 결과
+========================================================= */
 
 async function portalHandleCredentialResponse(response) {
   const appId = portalGetCurrentAppId();
@@ -453,7 +514,8 @@ async function portalHandleCredentialResponse(response) {
     localStorage.removeItem(PORTAL_AUTH_CONFIG.CACHE_KEY);
 
     let message =
-      "승인되지 않은 계정입니다.<br>관리자 승인 후 사용 가능합니다.";
+      "승인되지 않은 계정입니다.<br>" +
+      "관리자 승인 후 사용 가능합니다.";
 
     if (result.reason === "APP_NOT_ALLOWED") {
       message =
@@ -478,6 +540,10 @@ async function portalHandleCredentialResponse(response) {
 }
 
 
+/* =========================================================
+   인증 화면 초기 상태
+========================================================= */
+
 function portalPrepareAuthScreen() {
   const authScreen = document.getElementById("authScreen");
 
@@ -491,10 +557,18 @@ function portalPrepareAuthScreen() {
 }
 
 
+/* =========================================================
+   인증 시작
+
+   핵심:
+   - 유효한 공통 캐시가 있고 현재 앱 권한이 있으면 즉시 앱 표시
+   - 따라서 앱 이동/포털 복귀 때 Google 승인 팝업이 반복되지 않음
+   - 캐시가 없거나 만료된 경우에만 Google 로그인 실행
+========================================================= */
+
 function startPortalAuth() {
   const appId = portalGetCurrentAppId();
 
-  // 등록되지 않은 경로는 기본 차단
   if (!appId) {
     portalShowDenied(
       "이 앱의 권한 ID가 common-auth.js에 등록되지 않았습니다."
@@ -502,11 +576,9 @@ function startPortalAuth() {
     return;
   }
 
-  portalPrepareAuthScreen();
-
   const cachedUser = portalLoadAuthCache();
 
-  // 30일 캐시에 현재 앱 권한이 있으면 즉시 표시
+  // 캐시에 현재 앱 권한이 있으면 팝업 없이 즉시 표시
   if (
     cachedUser &&
     portalCanAccessApp(cachedUser, appId)
@@ -515,7 +587,7 @@ function startPortalAuth() {
     return;
   }
 
-  // 캐시가 있으나 현재 앱 권한이 없으면 바로 차단
+  // 캐시는 있으나 현재 앱 권한이 없으면 로그인 팝업 없이 차단
   if (
     cachedUser &&
     !portalCanAccessApp(cachedUser, appId)
@@ -524,14 +596,15 @@ function startPortalAuth() {
       [
         "이 앱에 대한 사용 권한이 없습니다.",
         "관리자에게 앱 권한을 요청해 주세요.",
-        cachedUser.email
-          ? "계정: " + cachedUser.email
-          : ""
-      ].filter(Boolean).join("<br>")
+        cachedUser.email ? "계정: " + cachedUser.email : ""
+      ]
+        .filter(Boolean)
+        .join("<br>")
     );
-
     return;
   }
+
+  portalPrepareAuthScreen();
 
   if (
     !window.google ||
@@ -543,6 +616,7 @@ function startPortalAuth() {
   }
 
   if (PORTAL_AUTH_STARTED) return;
+
   PORTAL_AUTH_STARTED = true;
 
   google.accounts.id.initialize({
@@ -564,8 +638,14 @@ function startPortalAuth() {
 }
 
 
-// common-auth.js가 실행되자마자 기존의 광역 세션 승인값을 제거합니다.
-// 이후 현재 APP_ID 권한 확인에 성공한 경우에만 다시 저장합니다.
+/* =========================================================
+   시작
+
+   기존 앱에서 sessionStorage만 보고 먼저 실행하는 것을 방지하기 위해
+   common-auth.js가 로드되는 즉시 현재 앱 승인값을 초기화합니다.
+   인증 성공 후 현재 APP ID로 다시 저장됩니다.
+========================================================= */
+
 portalClearSessionApproval();
 
 if (document.readyState === "loading") {
