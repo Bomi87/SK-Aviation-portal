@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="portal-auth-pending">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
@@ -701,6 +701,17 @@
         font-size: 20px;
       }
     }
+
+    /* 인증 결과가 나오기 전에는 로그인 화면과 포털을 모두 숨깁니다.
+       모바일에서 authScreen → portalApp 전환이 보이는 깜박임 방지용입니다. */
+    html.portal-auth-pending body {
+      visibility: hidden !important;
+    }
+
+    html.portal-auth-ready body {
+      visibility: visible !important;
+    }
+
   </style>
 </head>
 <body>
@@ -757,7 +768,7 @@
 
   <script>
     const GOOGLE_CLIENT_ID = "434108168386-jn8hp4mflhn68n98n6m9r1nm6iv7b3qe.apps.googleusercontent.com";
-    const AUTH_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxpFR7DWHINPFHGGZLo_9k9U_mVT8VlOj4XynOTxRJWbpIT5gIM5JBMq5sYyy4njS0/exec";
+    const AUTH_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyupuFWNXSvq_Cs7iiCYr_C1H2Blm7MTARV9E4pNZoCmhDxp4KIPdTFgIveGVHz526X/exec";
     const ATIS_PROXY_URL = 'https://script.google.com/macros/s/AKfycbzAi6T2g512uynDGuvhCTQUcz6wZ_gV6J8p0miphm23gkvh-z3VhK1A5Cxm4rUOe1up7A/exec';
 
     let CURRENT_USER = null;
@@ -838,8 +849,7 @@ function clearAuthCache() {
             mode: "CACHE_LOG",
             email: user.email || "",
             role: user.role || "",
-            name: user.name || "",
-            appId: "portal"
+            name: user.name || ""
           })
         });
       } catch (err) {
@@ -876,12 +886,19 @@ function showInAppBrowserNotice() {
     `;
   }
 }
-    function setAuthStatus(message) {
+    
+function finishPortalAuthRender() {
+  document.documentElement.classList.remove("portal-auth-pending");
+  document.documentElement.classList.add("portal-auth-ready");
+}
+
+function setAuthStatus(message) {
       const el = document.getElementById("authStatus");
       if (el) el.textContent = message || "";
     }
 
 function showManualLogin(message) {
+  finishPortalAuthRender();
   const btn = document.getElementById("manualLoginBtn");
   const googleButtonWrap = document.getElementById("googleButtonWrap");
 
@@ -941,6 +958,8 @@ function showPortal(user) {
       if (authScreen) authScreen.style.display = "none";
       if (portalApp) portalApp.style.display = "block";
 
+      finishPortalAuthRender();
+
       if (userPill && user) {
         const role = String(user.role || "USER").toUpperCase();
         const email = user.email || "";
@@ -970,6 +989,8 @@ function showPortal(user) {
 
       if (portalApp) portalApp.style.display = "none";
       if (authScreen) authScreen.style.display = "flex";
+
+      finishPortalAuthRender();
 
       const reason = result && result.reason ? result.reason : "UNKNOWN";
 
@@ -1047,7 +1068,6 @@ function showPortal(user) {
       // 캐시가 있으면 포털 즉시 표시 + 접속 로그 기록
       if (cachedUser) {
         showPortal(cachedUser);
-        logCachedAccess(cachedUser);
       }
 
       const manualBtn = document.getElementById("manualLoginBtn");
@@ -2342,6 +2362,22 @@ window.addEventListener("load", function () {
   showInAppBrowserNotice();
   initGoogleAuth();
 });
+
+// 인증 모듈이 비정상적으로 오래 걸리는 경우 로그인 화면을 표시합니다.
+setTimeout(function () {
+  if (document.documentElement.classList.contains("portal-auth-pending")) {
+    const authScreen = document.getElementById("authScreen");
+    const portalApp = document.getElementById("portalApp");
+
+    if (portalApp) portalApp.style.display = "none";
+    if (authScreen) authScreen.style.display = "flex";
+
+    finishPortalAuthRender();
+    showManualLogin("Google 로그인 확인이 지연되고 있습니다. 아래 버튼으로 접속해 주세요.");
+  }
+}, 5000);
+
+
     window.toggleFavorite = toggleFavorite;
 
 function openExternalUrl(url) {
