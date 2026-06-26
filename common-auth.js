@@ -50,6 +50,57 @@ const PORTAL_AUTH_CONFIG = {
   CACHE_HOURS: 24 * 30
 };
 
+/* =========================================================
+   포털 접속 세션 ID
+
+   포털에서 앱 URL에 portalSessionId를 전달합니다.
+   같은 포털 접속에서 연 모든 앱은 동일한 SessionId로 요약됩니다.
+========================================================= */
+
+const PORTAL_SESSION_ID_KEY = "bomiPortalSessionId";
+
+function portalCreateSessionId() {
+  try {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") {
+      return "PS-" + window.crypto.randomUUID();
+    }
+  } catch (err) {}
+
+  return (
+    "PS-" +
+    Date.now() +
+    "-" +
+    Math.random().toString(36).slice(2, 12)
+  );
+}
+
+function portalGetSessionId() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = String(params.get("portalSessionId") || "").trim();
+
+    if (fromUrl) {
+      sessionStorage.setItem(PORTAL_SESSION_ID_KEY, fromUrl);
+      return fromUrl;
+    }
+
+    let saved = sessionStorage.getItem(PORTAL_SESSION_ID_KEY);
+
+    if (!saved) {
+      // 포털을 거치지 않고 앱에 직접 들어온 경우를 위한 독립 세션
+      saved = portalCreateSessionId();
+      sessionStorage.setItem(PORTAL_SESSION_ID_KEY, saved);
+    }
+
+    return saved;
+  } catch (err) {
+    return portalCreateSessionId();
+  }
+}
+
+const CURRENT_PORTAL_SESSION_ID = portalGetSessionId();
+
+
 
 /* =========================================================
    앱 경로 ↔ 포털 APP ID 연결
@@ -517,9 +568,11 @@ function portalLogCachedAccess(user, appId) {
     }
 
     const sessionKey =
-      "portalAppLogged:" + normalizedAppId;
+      "portalAppLogged:" +
+      CURRENT_PORTAL_SESSION_ID +
+      ":" +
+      normalizedAppId;
 
-    // 같은 앱을 같은 탭/세션에서 여러 번 열어도 한 번만 기록
     if (sessionStorage.getItem(sessionKey) === "true") {
       return;
     }
@@ -532,7 +585,8 @@ function portalLogCachedAccess(user, appId) {
         method: "POST",
         keepalive: true,
         body: JSON.stringify({
-          mode: "CACHE_LOG",
+          mode: "SESSION_APP_UPDATE",
+          sessionId: CURRENT_PORTAL_SESSION_ID,
           email: user && user.email ? user.email : "",
           role: user && user.role ? user.role : "",
           name: user && user.name ? user.name : "",
@@ -544,10 +598,9 @@ function portalLogCachedAccess(user, appId) {
     });
 
   } catch (err) {
-    console.warn("캐시 접속 로그 전송 실패", err);
+    console.warn("세션 요약 전송 실패", err);
   }
 }
-
 
 async function portalCheckApproval(idToken, appId) {
   const res = await fetch(
@@ -556,7 +609,8 @@ async function portalCheckApproval(idToken, appId) {
       method: "POST",
       body: JSON.stringify({
         idToken: idToken,
-        appId: appId
+        appId: appId,
+        sessionId: CURRENT_PORTAL_SESSION_ID
       })
     }
   );
