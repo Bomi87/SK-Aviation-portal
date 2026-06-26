@@ -776,6 +776,7 @@
 
     // 승인 성공 기록을 브라우저에 저장해서 다음 접속부터 빠르게 포털 표시
     const PORTAL_AUTH_CACHE_KEY = "bomiPortalAuthCache";
+    const PORTAL_ID_TOKEN_KEY = "bomiPortalIdToken";
     const PORTAL_AUTH_CACHE_HOURS = 24 * 30; // 30일
 
     // 포털 탭을 완전히 닫으면 sessionStorage가 사라지므로,
@@ -871,6 +872,7 @@ function clearAuthCache() {
 
   try {
     sessionStorage.removeItem("portalApproved");
+    sessionStorage.removeItem(PORTAL_ID_TOKEN_KEY);
   } catch (err) {}
 }
 function isInAppBrowser() {
@@ -1073,23 +1075,92 @@ function showPortal(user) {
       setPermissionRefreshUi(false);
     }
 
-    function refreshPortalPermissions() {
+    function savePortalIdToken(idToken) {
+      try {
+        if (idToken) {
+          sessionStorage.setItem(PORTAL_ID_TOKEN_KEY, idToken);
+        }
+      } catch (err) {
+        console.warn("ID token save failed", err);
+      }
+    }
+
+    function loadValidPortalIdToken() {
+      try {
+        const token = sessionStorage.getItem(PORTAL_ID_TOKEN_KEY);
+        if (!token) return "";
+
+        const parts = token.split(".");
+        if (parts.length !== 3) {
+          sessionStorage.removeItem(PORTAL_ID_TOKEN_KEY);
+          return "";
+        }
+
+        const base64 = parts[1]
+          .replace(/-/g, "+")
+          .replace(/_/g, "/");
+
+        const padded = base64 + "=".repeat((4 - base64.length % 4) % 4);
+        const payload = JSON.parse(decodeURIComponent(
+          Array.prototype.map.call(
+            atob(padded),
+            function (char) {
+              return "%" + ("00" + char.charCodeAt(0).toString(16)).slice(-2);
+            }
+          ).join("")
+        ));
+
+        // 만료 60초 전부터는 재사용하지 않습니다.
+        const expiresAtMs = Number(payload.exp || 0) * 1000;
+
+        if (!expiresAtMs || Date.now() >= expiresAtMs - 60000) {
+          sessionStorage.removeItem(PORTAL_ID_TOKEN_KEY);
+          return "";
+        }
+
+        return token;
+
+      } catch (err) {
+        sessionStorage.removeItem(PORTAL_ID_TOKEN_KEY);
+        return "";
+      }
+    }
+
+    async function refreshPortalPermissions() {
       if (PORTAL_PERMISSION_REFRESHING) return;
 
-      if (
-        !window.google ||
-        !google.accounts ||
-        !google.accounts.id
-      ) {
-        alert("Google 로그인 모듈을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
-        return;
-      }
-
-      // 현재 포털 화면은 그대로 유지하고 인증 정보만 뒤에서 다시 확인합니다.
-      // 따라서 인증 확인 중에도 화면이 공백으로 바뀌지 않습니다.
       setPermissionRefreshUi(true);
 
       try {
+        // 최초 로그인 때 받은 유효한 Google ID 토큰을 재사용합니다.
+        // 페이지를 다시 열거나 One Tap을 다시 띄우지 않으므로 화면이 그대로 유지됩니다.
+        const savedIdToken = loadValidPortalIdToken();
+
+        if (savedIdToken) {
+          const result = await checkPortalApproval(savedIdToken);
+
+          if (result.ok === true) {
+            showPortal(result);
+            finishPermissionRefresh();
+            return;
+          }
+
+          finishPermissionRefresh();
+          denyPortal(result);
+          return;
+        }
+
+        // 토큰이 만료되었거나 없는 경우에만 Google 자동 인증을 다시 시도합니다.
+        if (
+          !window.google ||
+          !google.accounts ||
+          !google.accounts.id
+        ) {
+          finishPermissionRefresh();
+          alert("Google 로그인 정보가 만료되었습니다. 포털을 다시 열어 로그인해 주세요.");
+          return;
+        }
+
         google.accounts.id.cancel();
 
         google.accounts.id.prompt(function (notification) {
@@ -1101,8 +1172,8 @@ function showPortal(user) {
             finishPermissionRefresh();
 
             alert(
-              "Google 자동 인증을 완료하지 못했습니다. " +
-              "브라우저의 Google 로그인 상태를 확인한 뒤 다시 눌러 주세요."
+              "Google 로그인 정보가 만료되었습니다. " +
+              "포털을 다시 열어 Google 계정으로 로그인해 주세요."
             );
           }
         });
@@ -1114,7 +1185,7 @@ function showPortal(user) {
 
           alert(
             "승인 정보 확인이 지연되고 있습니다. " +
-            "잠시 후 다시 시도해 주세요."
+            "포털을 다시 열어 로그인해 주세요."
           );
         }, 10000);
 
@@ -1135,6 +1206,8 @@ function showPortal(user) {
           }
           return;
         }
+
+        savePortalIdToken(response.credential);
 
         if (!AUTH_READY) {
           setAuthStatus("승인 목록 확인 중...");
