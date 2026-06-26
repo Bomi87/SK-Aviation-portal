@@ -765,7 +765,7 @@
 
     // 승인 성공 기록을 브라우저에 저장해서 다음 접속부터 빠르게 포털 표시
     const PORTAL_AUTH_CACHE_KEY = "bomiPortalAuthCache";
-    const PORTAL_AUTH_CACHE_HOURS = 24 * 7; // 7일. 30일은 24 * 30 으로 변경
+    const PORTAL_AUTH_CACHE_HOURS = 24 * 30; // 30일
 
     function saveAuthCache(user) {
       try {
@@ -775,6 +775,7 @@
           email: user.email || "",
           role: user.role || "USER",
           name: user.name || "",
+          permissions: Array.isArray(user.permissions) ? user.permissions : [],
           expiresAt: expiresAt
         }));
       } catch (err) {
@@ -797,6 +798,18 @@
         if (!cached.email) {
           localStorage.removeItem(PORTAL_AUTH_CACHE_KEY);
           return null;
+        }
+
+        // 기존 USER 캐시에 permissions가 없으면 새로 로그인하여 권한을 받아오게 처리
+        const cachedRole = String(cached.role || "USER").toUpperCase();
+        if (cachedRole !== "ADMIN" && !Array.isArray(cached.permissions)) {
+          localStorage.removeItem(PORTAL_AUTH_CACHE_KEY);
+          return null;
+        }
+
+        // ADMIN은 항상 전체 권한
+        if (cachedRole === "ADMIN") {
+          cached.permissions = ["*"];
         }
 
         return cached;
@@ -903,10 +916,18 @@ function showManualLogin(message) {
   }
 }
 function showPortal(user) {
-  CURRENT_USER = user;
+  const normalizedRole = String(user && user.role ? user.role : "USER").toUpperCase();
+
+  CURRENT_USER = {
+    ...(user || {}),
+    role: normalizedRole,
+    permissions: normalizedRole === "ADMIN"
+      ? ["*"]
+      : (Array.isArray(user && user.permissions) ? user.permissions : [])
+  };
   AUTH_READY = true;
 
-  saveAuthCache(user);
+  saveAuthCache(CURRENT_USER);
 
   try {
     sessionStorage.setItem("portalApproved", "true");
@@ -929,6 +950,14 @@ function showPortal(user) {
 
         userPill.classList.toggle("admin", role === "ADMIN");
         userPill.style.display = "inline-flex";
+      }
+
+      // 사용자 권한 기준으로 카테고리와 앱 목록을 다시 표시
+      if (typeof populateCategoryControls === "function") {
+        populateCategoryControls();
+      }
+      if (typeof renderTools === "function") {
+        renderTools();
       }
     }
 
@@ -1709,9 +1738,24 @@ function saveActiveCategory() {
       setTheme(localStorage.getItem(THEME_KEY) || 'light');
     }
 
+function canAccessTool(tool) {
+  if (!CURRENT_USER || !tool) return false;
+
+  const role = String(CURRENT_USER.role || 'USER').trim().toUpperCase();
+  if (role === 'ADMIN') return true;
+
+  const permissions = Array.isArray(CURRENT_USER.permissions)
+    ? CURRENT_USER.permissions.map(value => String(value).trim()).filter(Boolean)
+    : [];
+
+  if (permissions.includes('*')) return true;
+  return permissions.includes(tool.id);
+}
+
 function categories() {
   const preferredOrder = ['Prep', 'Crew', 'Airport', 'Fuel', 'WX', 'Tracking', 'FAA', 'News', 'Medical'];
-  const existing = [...new Set(tools.map(t => t.category))];
+  const accessibleTools = tools.filter(canAccessTool);
+  const existing = [...new Set(accessibleTools.map(t => t.category))];
   return preferredOrder.filter(cat => existing.includes(cat));
 }
   function populateCategoryControls() {
@@ -1762,14 +1806,17 @@ if (categorySelect) {
     }
 function filteredTools() {
   const q = searchInput ? searchInput.value.trim().toLowerCase() : '';
-      return tools.filter(tool => {
-        const matchCategory = activeCategory === 'all' || tool.category === activeCategory;
-        const matchSearch = !q || [tool.name, tool.description, tool.category, ...(tool.tags || [])]
-          .join(' ').toLowerCase().includes(q);
-        const matchFavorites = !favoritesOnly || favorites.includes(tool.id);
-        return matchCategory && matchSearch && matchFavorites;
-      });
-    }
+
+  return tools.filter(tool => {
+    const matchPermission = canAccessTool(tool);
+    const matchCategory = activeCategory === 'all' || tool.category === activeCategory;
+    const matchSearch = !q || [tool.name, tool.description, tool.category, ...(tool.tags || [])]
+      .join(' ').toLowerCase().includes(q);
+    const matchFavorites = !favoritesOnly || favorites.includes(tool.id);
+
+    return matchPermission && matchCategory && matchSearch && matchFavorites;
+  });
+}
 
     function renderTools() {
       const items = filteredTools();
@@ -2313,6 +2360,12 @@ function openExternalUrl(url) {
 
   const tool = tools.find(t => t.id === toolId);
   if (!tool) return;
+
+  // 화면 우회 호출 방지: 현재 사용자에게 허용된 앱인지 다시 확인
+  if (!canAccessTool(tool)) {
+    alert('이 프로그램에 대한 접근 권한이 없습니다.');
+    return;
+  }
 
   try {
    if (tool.action === 'faa-airport-status') {
