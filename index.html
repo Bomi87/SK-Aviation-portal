@@ -701,57 +701,9 @@
         font-size: 20px;
       }
     }
-
-    /* =========================================================
-       모바일 앱/외부 페이지에서 포털로 돌아올 때 화면 잔상 방지
-    ========================================================= */
-    html,
-    body {
-      min-height: 100%;
-      background: var(--bg);
-      overscroll-behavior: none;
-    }
-
-    #portalApp,
-    #authScreen {
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
-      transform: translateZ(0);
-      -webkit-transform: translateZ(0);
-    }
-
-    #portalRestoreCover {
-      position: fixed;
-      inset: 0;
-      z-index: 2147483647;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: var(--bg);
-      color: var(--muted);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
-      font-size: 13px;
-      font-weight: 700;
-      -webkit-transform: translateZ(0);
-      transform: translateZ(0);
-    }
-
-    #portalRestoreCover.show {
-      display: flex;
-    }
-
-    body.portal-restoring {
-      overflow: hidden;
-    }
-
   </style>
 </head>
 <body>
-
-  <div id="portalRestoreCover" aria-hidden="true">
-    포털 화면 복원 중...
-  </div>
-
   <div id="authScreen" class="auth-screen">
     <div class="auth-card">
       <img src="SK_LOGO.png" alt="SK Aviation logo" class="auth-logo" />
@@ -805,7 +757,7 @@
 
   <script>
     const GOOGLE_CLIENT_ID = "434108168386-jn8hp4mflhn68n98n6m9r1nm6iv7b3qe.apps.googleusercontent.com";
-    const AUTH_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-uZAKiP2-ZK24pZAOMtbGmTweRPRSxuNA8V1o_esVaUlz9g4dZQ2fzz2R6qkPSNY1/exec";
+    const AUTH_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxpFR7DWHINPFHGGZLo_9k9U_mVT8VlOj4XynOTxRJWbpIT5gIM5JBMq5sYyy4njS0/exec";
     const ATIS_PROXY_URL = 'https://script.google.com/macros/s/AKfycbzAi6T2g512uynDGuvhCTQUcz6wZ_gV6J8p0miphm23gkvh-z3VhK1A5Cxm4rUOe1up7A/exec';
 
     let CURRENT_USER = null;
@@ -886,7 +838,8 @@ function clearAuthCache() {
             mode: "CACHE_LOG",
             email: user.email || "",
             role: user.role || "",
-            name: user.name || ""
+            name: user.name || "",
+            appId: "portal"
           })
         });
       } catch (err) {
@@ -2391,128 +2344,7 @@ window.addEventListener("load", function () {
 });
     window.toggleFavorite = toggleFavorite;
 
-
-/* =========================================================
-   모바일에서 외부 앱/새 탭을 닫고 포털로 돌아올 때
-   이전 화면 잔상과 남아 있는 오버레이를 정리합니다.
-========================================================= */
-
-let PORTAL_RETURN_REFRESH_TIMER = null;
-
-function showPortalRestoreCover() {
-  const cover = document.getElementById("portalRestoreCover");
-
-  document.body.classList.add("portal-restoring");
-
-  if (cover) {
-    cover.classList.add("show");
-    cover.setAttribute("aria-hidden", "false");
-  }
-}
-
-function hidePortalRestoreCover() {
-  const cover = document.getElementById("portalRestoreCover");
-
-  document.body.classList.remove("portal-restoring");
-
-  if (cover) {
-    cover.classList.remove("show");
-    cover.setAttribute("aria-hidden", "true");
-  }
-}
-
-function closePortalTransientUi() {
-  if (typeof hideLoading === "function") {
-    hideLoading();
-  }
-
-  const modalIds = [
-    "airportCodeModal",
-    "atisResultModal"
-  ];
-
-  modalIds.forEach(function (id) {
-    const modal = document.getElementById(id);
-
-    if (modal) {
-      modal.style.display = "none";
-    }
-  });
-
-  const input = document.getElementById("airportCodeInput");
-
-  if (input && document.activeElement === input) {
-    input.blur();
-  }
-}
-
-function refreshPortalAfterReturn() {
-  clearTimeout(PORTAL_RETURN_REFRESH_TIMER);
-  showPortalRestoreCover();
-
-  PORTAL_RETURN_REFRESH_TIMER = setTimeout(function () {
-    closePortalTransientUi();
-
-    const cachedUser =
-      typeof loadAuthCache === "function"
-        ? loadAuthCache()
-        : null;
-
-    if (cachedUser && typeof showPortal === "function") {
-      showPortal(cachedUser);
-    }
-
-    if (typeof populateCategoryControls === "function") {
-      populateCategoryControls();
-    }
-
-    if (typeof updateStats === "function") {
-      updateStats();
-    }
-
-    if (typeof renderTools === "function") {
-      renderTools();
-    }
-
-    // 모바일 Safari/Chrome에서 합성 레이어를 강제로 다시 그리게 합니다.
-    const portalApp = document.getElementById("portalApp");
-
-    if (portalApp) {
-      portalApp.style.transform = "translateZ(0)";
-      void portalApp.offsetHeight;
-    }
-
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        hidePortalRestoreCover();
-      });
-    });
-  }, 40);
-}
-
-window.addEventListener("pageshow", function (event) {
-  // BFCache 복원 또는 일반적인 뒤로가기/탭 복귀 모두 처리
-  if (event.persisted || document.visibilityState === "visible") {
-    refreshPortalAfterReturn();
-  }
-});
-
-document.addEventListener("visibilitychange", function () {
-  if (document.visibilityState === "visible") {
-    refreshPortalAfterReturn();
-  }
-});
-
-window.addEventListener("focus", function () {
-  refreshPortalAfterReturn();
-});
-
-
 function openExternalUrl(url) {
-  // 외부 앱으로 이동하기 전에 포털 화면 위에 복원 커버를 표시합니다.
-  // 모바일에서 다시 돌아올 때 이전 화면 잔상이 남는 현상을 줄입니다.
-  showPortalRestoreCover();
-
   const newWindow = window.open(url, '_blank');
 
   // 모바일/브라우저 팝업 차단 시 현재 창에서라도 열리게 처리
@@ -2522,13 +2354,6 @@ function openExternalUrl(url) {
   }
 
   newWindow.opener = null;
-
-  // 새 탭 열기에 실패하지 않았는데 사용자가 포털에 그대로 남아 있는 경우 대비
-  setTimeout(function () {
-    if (document.visibilityState === "visible") {
-      refreshPortalAfterReturn();
-    }
-  }, 700);
 }
 
    async function openTool(event, toolId) {
