@@ -768,7 +768,7 @@
 
   <script>
     const GOOGLE_CLIENT_ID = "434108168386-jn8hp4mflhn68n98n6m9r1nm6iv7b3qe.apps.googleusercontent.com";
-    const AUTH_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxpFR7DWHINPFHGGZLo_9k9U_mVT8VlOj4XynOTxRJWbpIT5gIM5JBMq5sYyy4njS0/exec";
+    const AUTH_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw9UscwIiEHItNgVkLrD9Tqmgi1xT_A96YmjyqBQlKzfX5DOUHeI7c77Q4MnQlSdylf/exec";
     const ATIS_PROXY_URL = 'https://script.google.com/macros/s/AKfycbzAi6T2g512uynDGuvhCTQUcz6wZ_gV6J8p0miphm23gkvh-z3VhK1A5Cxm4rUOe1up7A/exec';
 
     let CURRENT_USER = null;
@@ -979,6 +979,8 @@ function showPortal(user) {
       if (typeof renderTools === "function") {
         renderTools();
       }
+
+      restorePortalReturnState();
     }
 
     function denyPortal(result) {
@@ -1713,6 +1715,73 @@ const refreshBtn = document.getElementById('refreshBtn');
   const FAVORITE_KEY = 'toolPortalFavorites';
 const THEME_KEY = 'toolPortalTheme';
 const ACTIVE_CATEGORY_KEY = 'toolPortalActiveCategory';
+const PORTAL_RETURN_STATE_KEY = 'bomiPortalReturnState';
+
+function savePortalReturnState() {
+  try {
+    sessionStorage.setItem(
+      PORTAL_RETURN_STATE_KEY,
+      JSON.stringify({
+        scrollY: Math.max(
+          0,
+          window.scrollY ||
+          document.documentElement.scrollTop ||
+          0
+        ),
+        category: activeCategory || 'all',
+        savedAt: Date.now()
+      })
+    );
+  } catch (err) {}
+}
+
+function restorePortalReturnState() {
+  try {
+    const raw = sessionStorage.getItem(
+      PORTAL_RETURN_STATE_KEY
+    );
+
+    if (!raw) return;
+
+    const state = JSON.parse(raw);
+
+    // 오래된 위치는 새 접속으로 판단하여 복원하지 않음
+    if (
+      !state.savedAt ||
+      Date.now() - Number(state.savedAt) > 60 * 60 * 1000
+    ) {
+      sessionStorage.removeItem(
+        PORTAL_RETURN_STATE_KEY
+      );
+      return;
+    }
+
+    if (state.category) {
+      activeCategory = state.category;
+      saveActiveCategory();
+    }
+
+    const targetY = Math.max(
+      0,
+      Number(state.scrollY) || 0
+    );
+
+    // 카드 렌더링과 인증 화면 전환이 끝난 다음 위치 복원
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        window.scrollTo({
+          top: targetY,
+          left: 0,
+          behavior: 'auto'
+        });
+      });
+    });
+  } catch (err) {
+    sessionStorage.removeItem(
+      PORTAL_RETURN_STATE_KEY
+    );
+  }
+}
 
 let favorites = loadFavorites();
 let activeCategory = loadActiveCategory();
@@ -2363,6 +2432,11 @@ window.addEventListener("load", function () {
   initGoogleAuth();
 });
 
+window.addEventListener("pagehide", function () {
+  // 새로고침이 아니라 외부 앱 이동/뒤로가기 복귀를 위한 현재 위치 저장
+  savePortalReturnState();
+});
+
 // 인증 모듈이 비정상적으로 오래 걸리는 경우 로그인 화면을 표시합니다.
 setTimeout(function () {
   if (document.documentElement.classList.contains("portal-auth-pending")) {
@@ -2380,7 +2454,58 @@ setTimeout(function () {
 
     window.toggleFavorite = toggleFavorite;
 
+
+function logToolAccessFromPortal(toolId) {
+  try {
+    const normalizedToolId = String(toolId || "").trim();
+
+    if (
+      !normalizedToolId ||
+      !CURRENT_USER ||
+      !CURRENT_USER.email
+    ) {
+      return;
+    }
+
+    // common-auth.js와 동일한 키를 사용합니다.
+    // 포털에서 먼저 기록하면 개별 앱에서 같은 세션에 중복 기록하지 않습니다.
+    const sessionKey =
+      "portalAppLogged:" + normalizedToolId;
+
+    if (
+      sessionStorage.getItem(sessionKey) === "true"
+    ) {
+      return;
+    }
+
+    sessionStorage.setItem(sessionKey, "true");
+
+    fetch(AUTH_SCRIPT_URL, {
+      method: "POST",
+      keepalive: true,
+      body: JSON.stringify({
+        mode: "CACHE_LOG",
+        email: CURRENT_USER.email || "",
+        role: CURRENT_USER.role || "",
+        name: CURRENT_USER.name || "",
+        appId: normalizedToolId
+      })
+    }).catch(function () {
+      // 전송 실패 시 다음 접속에서 다시 기록할 수 있게 복구
+      sessionStorage.removeItem(sessionKey);
+    });
+
+  } catch (err) {
+    console.warn(
+      "Tool access log failed",
+      err
+    );
+  }
+}
+
 function openExternalUrl(url) {
+  savePortalReturnState();
+
   const newWindow = window.open(url, '_blank');
 
   // 모바일/브라우저 팝업 차단 시 현재 창에서라도 열리게 처리
@@ -2403,6 +2528,10 @@ function openExternalUrl(url) {
     alert('이 프로그램에 대한 접근 권한이 없습니다.');
     return;
   }
+
+  // 실제로 선택한 프로그램의 AppId를 기록
+  // 같은 브라우저 세션에서 동일 앱은 한 번만 전송
+  logToolAccessFromPortal(tool.id);
 
   try {
    if (tool.action === 'faa-airport-status') {
