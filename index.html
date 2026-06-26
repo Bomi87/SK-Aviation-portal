@@ -2451,7 +2451,13 @@ function askAirportCode(title = 'Airport Code Input', desc = 'ICAO 또는 IATA �
     themeToggle.addEventListener('click', () => {
       setTheme(document.body.classList.contains('dark') ? 'light' : 'dark');
     });
-refreshBtn.addEventListener('click', () => {
+refreshBtn.addEventListener("click", function () {
+  clearAuthCache();
+
+  try {
+    sessionStorage.clear();
+  } catch (err) {}
+
   location.reload();
 });
    populateCategoryControls();
