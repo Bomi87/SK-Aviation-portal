@@ -1,3 +1,40 @@
+/* =========================================================
+   인증 전 화면 깜박임 방지
+   common-auth.js가 실행되는 즉시 보호 화면을 숨기고,
+   인증 결과가 결정된 뒤 한 번만 표시합니다.
+========================================================= */
+
+(function portalInstallAuthPendingStyle() {
+  document.documentElement.classList.add("portal-auth-pending");
+
+  if (document.getElementById("portalAuthPendingStyle")) {
+    return;
+  }
+
+  const style = document.createElement("style");
+  style.id = "portalAuthPendingStyle";
+  style.textContent = `
+    html.portal-auth-pending #authScreen,
+    html.portal-auth-pending #appRoot {
+      visibility: hidden !important;
+    }
+
+    html.portal-auth-ready #authScreen,
+    html.portal-auth-ready #appRoot {
+      visibility: visible;
+    }
+  `;
+
+  (document.head || document.documentElement).appendChild(style);
+})();
+
+
+function portalFinishAuthRender() {
+  document.documentElement.classList.remove("portal-auth-pending");
+  document.documentElement.classList.add("portal-auth-ready");
+}
+
+
 const PORTAL_AUTH_CONFIG = {
   GOOGLE_CLIENT_ID:
     "434108168386-jn8hp4mflhn68n98n6m9r1nm6iv7b3qe.apps.googleusercontent.com",
@@ -308,6 +345,17 @@ function portalShowApp(user, appId) {
   if (!portalCanAccessApp(user, appId)) {
     portalClearSessionApproval();
 
+
+setTimeout(function () {
+  if (document.documentElement.classList.contains("portal-auth-pending")) {
+    portalShowDenied(
+      "Google 로그인 확인이 지연되고 있습니다.<br>아래 버튼으로 다시 접속해 주세요."
+    );
+  }
+}, 5000);
+
+
+
     portalShowDenied(
       [
         "이 앱에 대한 사용 권한이 없습니다.",
@@ -345,6 +393,8 @@ function portalShowApp(user, appId) {
     appRoot.style.display = "block";
   }
 
+  portalFinishAuthRender();
+
   window.CURRENT_PORTAL_USER = normalizedUser;
   window.CURRENT_PORTAL_APP_ID = appId;
 
@@ -368,11 +418,14 @@ function portalShowDenied(message) {
   }
 
   if (!authScreen) {
+    portalFinishAuthRender();
     console.error(message || "접근 권한이 없습니다.");
     return;
   }
 
   authScreen.style.display = "flex";
+  portalFinishAuthRender();
+
   authScreen.innerHTML = `
     <div style="
       width:100%;
@@ -457,6 +510,22 @@ function renderPortalGoogleButton() {
 
 function portalLogCachedAccess(user, appId) {
   try {
+    const normalizedAppId = String(appId || "").trim();
+
+    if (!normalizedAppId || normalizedAppId === "portal") {
+      return;
+    }
+
+    const sessionKey =
+      "portalAppLogged:" + normalizedAppId;
+
+    // 같은 앱을 같은 탭/세션에서 여러 번 열어도 한 번만 기록
+    if (sessionStorage.getItem(sessionKey) === "true") {
+      return;
+    }
+
+    sessionStorage.setItem(sessionKey, "true");
+
     fetch(
       PORTAL_AUTH_CONFIG.AUTH_SCRIPT_URL,
       {
@@ -467,10 +536,13 @@ function portalLogCachedAccess(user, appId) {
           email: user && user.email ? user.email : "",
           role: user && user.role ? user.role : "",
           name: user && user.name ? user.name : "",
-          appId: appId || ""
+          appId: normalizedAppId
         })
       }
-    ).catch(function () {});
+    ).catch(function () {
+      sessionStorage.removeItem(sessionKey);
+    });
+
   } catch (err) {
     console.warn("캐시 접속 로그 전송 실패", err);
   }
