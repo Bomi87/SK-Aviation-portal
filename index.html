@@ -2,7 +2,7 @@
 <html lang="ko" class="portal-auth-pending">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BOMI Operations Portal</title>
 
   <!-- 홈화면/PWA 아이콘 설정 -->
@@ -44,6 +44,12 @@
       --shadow: 0 14px 32px rgba(0, 0, 0, 0.35);
     }
     * { box-sizing: border-box; }
+    html,
+    body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
     body {
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
@@ -51,6 +57,38 @@
       color: var(--text);
       -webkit-text-size-adjust: 100%;
       text-size-adjust: 100%;
+    }
+
+    img,
+    svg {
+      max-width: 100%;
+    }
+
+    /* 새 앱/긴 태그/긴 설명 추가 시 모바일 화면이 가로로 밀리며 zoom-in처럼 보이는 현상 방지 */
+    .topbar,
+    .brand,
+    .brand-text,
+    .chips,
+    .chip,
+    .section-head,
+    .tool-card,
+    .tool-top,
+    .tool-title,
+    .tool-desc,
+    .badges,
+    .badge,
+    .tool-footer,
+    .updated,
+    .btn {
+      min-width: 0;
+    }
+
+    .tool-title,
+    .tool-desc,
+    .badge,
+    .updated {
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
     .wrap {
       max-width: 1220px;
@@ -326,6 +364,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
+      flex-wrap: wrap;
     }
     .updated { color: var(--muted); font-size: 12px; }
     .empty {
@@ -567,141 +606,185 @@
   .tool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 680px) {
-.controls {
-  display: none;
+  /* 모바일 전용: 전체 화면이 zoom-in 된 것처럼 보이지 않도록
+     spacing/font/card 크기 축소 + 가로 overflow 방지 */
+  .controls {
+    display: none;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 100%;
+    padding: 9px;
+  }
+
+  h1 {
+    font-size: 22px;
+  }
+
+  .topbar {
+    padding: 8px 10px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    gap: 8px;
+  }
+
+  .brand {
+    gap: 7px;
+    flex: 1 1 auto;
+  }
+
+  .brand-title {
+    font-size: 15.5px;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .brand-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    padding: 3px;
+  }
+
+  .brand-sub {
+    display: none;
+  }
+
+  .user-pill {
+    font-size: 9.5px;
+    padding: 5px 7px;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    font-size: 14px;
+    flex: 0 0 auto;
+  }
+
+  .chips {
+    gap: 4px;
+    margin-bottom: 6px;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .chip {
+    padding: 4px 8px;
+    font-size: 10.8px !important;
+    border-radius: 999px;
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .section-head {
+    margin: 8px 0 7px;
+    gap: 6px;
+  }
+
+  .section-title {
+    font-size: 16px;
+  }
+
+  .section-meta {
+    font-size: 11.5px;
+    white-space: nowrap;
+  }
+
+  .section-refresh-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 13px !important;
+    border-radius: 9px;
+    padding: 0;
+  }
+
+  .tool-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+  }
+
+  .stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .tool-card {
+    min-height: unset;
+    padding: 10px;
+    border-radius: 13px;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .tool-top {
+    margin-bottom: 8px;
+    gap: 8px;
+  }
+
+  .icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    font-size: 17px;
+    flex: 0 0 auto;
+  }
+
+  .tool-custom-icon {
+    width: 21px;
+    height: 21px;
+    border-radius: 5px;
+  }
+
+  .tool-title {
+    font-size: 15.5px;
+    margin-bottom: 4px;
+  }
+
+  .tool-desc {
+    min-height: unset;
+    font-size: 11px;
+    line-height: 1.38;
+    margin-bottom: 8px;
+  }
+
+  .badges {
+    gap: 5px;
+    margin-bottom: 9px;
+  }
+
+  .badge {
+    font-size: 10px;
+    padding: 4px 7px;
+    white-space: normal;
+  }
+
+  .tool-footer {
+    gap: 6px;
+  }
+
+  .tool-footer .btn {
+    padding: 7px 9px;
+    font-size: 12px !important;
+    border-radius: 9px;
+  }
+
+  .updated {
+    font-size: 10.5px;
+  }
+
+  .fav-btn {
+    font-size: 17px;
+    flex: 0 0 auto;
+  }
 }
-
-.chips {
-  gap: 5px;
-  margin-bottom: 8px;
-}
-
-.chip {
-  padding: 5px 9px;
-  font-size: 11.5px !important;
-  border-radius: 999px;
-}
-
-.section-head {
-  margin: 10px 0 8px;
-}
-
-      .wrap { padding: 14px; }
-      h1 { font-size: 26px; }
-     .topbar {
-  padding: 10px 12px;
-  border-radius: 14px;
-  margin-bottom: 12px;
-}
-
-      
-.brand {
-  gap: 8px;
-}
-
-.brand-title {
-  font-size: 18px;
-  line-height: 1.15;
-}
-
-.brand-logo {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  padding: 4px;
-}
-
-.brand-sub {
-  display: none;
-}
-
-.user-pill {
-  font-size: 10px;
-  padding: 6px 8px;
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.icon-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-}
-      .controls { grid-template-columns: 1fr; }
-      .tool-grid { grid-template-columns: 1fr; gap: 12px; }
-      .stats { grid-template-columns: 1fr 1fr; }
-
-      .section-title {
-        font-size: 20px;
-      }
-
-      .section-meta {
-        font-size: 13px;
-      }
-
-      .section-refresh-btn {
-        width: 34px;
-        height: 34px;
-        font-size: 15px !important;
-      }
-
-      .tool-card {
-        min-height: unset;
-        padding: 14px;
-        border-radius: 16px;
-      }
-
-      .tool-top {
-        margin-bottom: 10px;
-      }
-
-      .icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 12px;
-        font-size: 20px;
-      }
-
-      .tool-custom-icon {
-        width: 26px;
-        height: 26px;
-        border-radius: 7px;
-      }
-
-      .tool-title {
-        font-size: 18px;
-        margin-bottom: 6px;
-      }
-
-      .tool-desc {
-        min-height: unset;
-        font-size: 12px;
-        line-height: 1.45;
-        margin-bottom: 10px;
-      }
-
-      .badges {
-        gap: 6px;
-        margin-bottom: 12px;
-      }
-
-      .badge {
-        font-size: 11px;
-        padding: 5px 8px;
-      }
-
-      .tool-footer .btn {
-        padding: 9px 12px;
-        font-size: 14px !important;
-        border-radius: 11px;
-      }
-
-      .fav-btn {
-        font-size: 20px;
-      }
-    }
 
     /* 인증 결과가 나오기 전에는 로그인 화면과 포털을 모두 숨깁니다.
        모바일에서 authScreen → portalApp 전환이 보이는 깜박임 방지용입니다. */
