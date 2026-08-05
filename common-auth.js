@@ -144,6 +144,8 @@ const PORTAL_APP_RULES = [
   },
 
   { id: "opsgroup-news", path: "/OPS_NEWS/" },
+  { id: "japan-slot-checker", path: "/JAPAN_SLOT/" },
+  { id: "vip-ntm", path: "/VIP_NTM/" },
   { id: "hospital-search", path: "/Hospital/" },
   { id: "fbo-fee-lookup", path: "/FBO_Fees/" }
 ];
