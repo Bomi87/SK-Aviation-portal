@@ -44,10 +44,12 @@ const PORTAL_AUTH_CONFIG = {
     "https://script.google.com/macros/s/AKfycbzLlWbfUkvKflGGMy7Z4W6dD8PVYGAGYIktA3urbvLX07AZqC7htH3IJH6-bmE6srxf/exec",
 
   // 같은 bomi87.github.io 도메인의 앱들이 공통으로 사용하는 로그인 캐시
-  CACHE_KEY: "bomiPortalAuthCache",
+  // V2로 변경하여 기존 30일 캐시의 사용자명(예: 사용자1)을 즉시 폐기합니다.
+  CACHE_KEY: "bomiPortalAuthCacheV2",
 
   // Google 승인 팝업 반복 방지를 위한 로그인/권한 캐시 기간
-  CACHE_HOURS: 24 * 30
+  // ApprovedUsers의 이름/권한 변경이 오래 남지 않도록 1시간만 유지합니다.
+  CACHE_HOURS: 1
 };
 
 /* =========================================================
