@@ -124,6 +124,7 @@ const PORTAL_APP_RULES = [
   { id: "windy-airport-weather-check", path: "/WINDY/" },
   { id: "faa-artcc-advisory-map", path: "/FAA_ATCSCC/" },
   { id: "faa-cnd-diagram", path: "/U.S_Airport_Diagram/" },
+  { id: "receipt-expense-manager", path: "/Receipt/" },
 
   // 동일 경로를 쿼리스트링으로 구분
   {
