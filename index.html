@@ -2331,7 +2331,7 @@ function filteredTools() {
               </div>
             </div>
             <div class="tool-footer">
-              <button class="btn btn-primary" type="button" onclick="openTool(event, '${tool.id}')">Open</button>
+              <a class="btn btn-primary" href="#" onclick="openTool(event, '${tool.id}')" target="_blank" rel="noopener noreferrer">Open</a>
             </div>
           </article>
         `;
@@ -2919,22 +2919,6 @@ function openExternalUrl(url, toolId) {
   savePortalReturnState(toolId);
 
   const targetUrl = addPortalSessionToUrl(url);
-
-  // 포털과 같은 GitHub Pages 도메인의 앱은 현재 창에서 엽니다.
-  // iOS 홈 화면 포털(PWA)에서 window.open(..., '_blank')을 사용하면
-  // 별도 인앱 WebView가 생성되고, 일부 환경에서 주소만 표시된 채
-  // 흰 화면이 되는 현상이 있어 이를 피합니다.
-  try {
-    const parsedTarget = new URL(targetUrl, window.location.href);
-
-    if (parsedTarget.hostname === 'bomi87.github.io') {
-      window.location.assign(parsedTarget.href);
-      return;
-    }
-  } catch (err) {
-    // URL 판별에 실패하면 기존 외부 링크 처리로 계속 진행합니다.
-  }
-
   const newWindow = window.open(targetUrl, '_blank');
 
   // 모바일 또는 팝업 차단 시 현재 창으로 이동합니다.
