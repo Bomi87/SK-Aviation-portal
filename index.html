@@ -870,7 +870,8 @@
     const PORTAL_AUTH_CACHE_KEY = "bomiPortalAuthCacheV2";
     const PORTAL_ID_TOKEN_KEY = "bomiPortalIdToken";
     const PORTAL_SESSION_TOKEN_KEY = "bomiPortalSessionTokenV1";
-    const PORTAL_AUTH_CACHE_HOURS = 24 * 30; // 30일
+    // 권한 변경은 최대 1시간 이내 반영합니다.
+    const PORTAL_AUTH_CACHE_HOURS = 1;
 
     // 포털 탭을 완전히 닫으면 sessionStorage가 사라지므로,
     // 다음 포털 접속에서는 자동으로 새로운 세션 ID가 만들어집니다.
@@ -910,7 +911,10 @@
 
     function saveAuthCache(user) {
       try {
-        const expiresAt = Date.now() + PORTAL_AUTH_CACHE_HOURS * 60 * 60 * 1000;
+        const savedExpiresAt = Number(user && user.expiresAt || 0);
+        const expiresAt = savedExpiresAt > Date.now()
+          ? savedExpiresAt
+          : Date.now() + PORTAL_AUTH_CACHE_HOURS * 60 * 60 * 1000;
 
         localStorage.setItem(PORTAL_AUTH_CACHE_KEY, JSON.stringify({
           email: user.email || "",
@@ -1193,6 +1197,24 @@ function showPortal(user) {
       return await res.json();
     }
 
+    async function checkSavedPortalSession(portalSessionToken) {
+      const res = await fetch(AUTH_SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          mode: "PORTAL_SESSION_AUTH",
+          portalSessionToken: portalSessionToken,
+          appId: "portal",
+          sessionId: CURRENT_PORTAL_SESSION_ID
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error("포털 세션 확인 오류 HTTP " + res.status);
+      }
+
+      return await res.json();
+    }
+
 
     let PORTAL_PERMISSION_REFRESHING = false;
     let PORTAL_PERMISSION_REFRESH_TIMER = null;
@@ -1463,13 +1485,40 @@ function showPortal(user) {
       }
     }
 
-    function initGoogleAuth() {
+    async function initGoogleAuth() {
       const cachedUser = loadAuthCache();
       const validPortalSessionToken = loadPortalSessionToken();
 
       // 캐시가 있으면 포털 즉시 표시 + 접속 로그 기록
       if (cachedUser) {
         showPortal(cachedUser);
+      }
+
+      // 1시간 캐시는 만료됐지만 서명 세션이 유효하면,
+      // Google 창을 띄우지 않고 백엔드에서 최신 권한만 자동 확인합니다.
+      if (!cachedUser && validPortalSessionToken) {
+        try {
+          const sessionResult = await checkSavedPortalSession(
+            validPortalSessionToken
+          );
+
+          if (sessionResult.ok === true) {
+            showPortal(sessionResult);
+            return;
+          }
+
+          if (
+            sessionResult.reason === "NOT_APPROVED" ||
+            sessionResult.reason === "APP_NOT_ALLOWED"
+          ) {
+            denyPortal(sessionResult);
+            return;
+          }
+
+          localStorage.removeItem(PORTAL_SESSION_TOKEN_KEY);
+        } catch (err) {
+          console.warn("Saved portal session check failed", err);
+        }
       }
 
       const manualBtn = document.getElementById("manualLoginBtn");
