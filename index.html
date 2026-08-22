@@ -5,18 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>BOMI Operations Portal</title>
 
-  <!-- 홈화면/PWA 아이콘 설정 -->
-  <link rel="manifest" href="manifest-toolbar.json?v=20260822-1">
+  <!-- 홈 화면 Safari 바로가기 아이콘 설정 -->
   <meta name="theme-color" content="#2563eb">
 
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="SK-Aviation">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
@@ -988,10 +982,37 @@ function savePortalSessionToken(token) {
 
 function loadPortalSessionToken() {
   try {
-    return String(
+    const token = String(
       localStorage.getItem(PORTAL_SESSION_TOKEN_KEY) || ""
     ).trim();
+
+    if (!token) return "";
+
+    const payloadPart = token.split(".")[0] || "";
+    const base64 = payloadPart
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+    const padded = base64 + "=".repeat((4 - base64.length % 4) % 4);
+    const payload = JSON.parse(decodeURIComponent(
+      Array.prototype.map.call(
+        atob(padded),
+        function (char) {
+          return "%" + ("00" + char.charCodeAt(0).toString(16)).slice(-2);
+        }
+      ).join("")
+    ));
+
+    // 만료 60초 전부터는 다시 로그인하여 새 세션을 발급받습니다.
+    const expiresAtMs = Number(payload.exp || 0) * 1000;
+
+    if (!expiresAtMs || Date.now() >= expiresAtMs - 60000) {
+      localStorage.removeItem(PORTAL_SESSION_TOKEN_KEY);
+      return "";
+    }
+
+    return token;
   } catch (err) {
+    localStorage.removeItem(PORTAL_SESSION_TOKEN_KEY);
     return "";
   }
 }
@@ -1444,6 +1465,7 @@ function showPortal(user) {
 
     function initGoogleAuth() {
       const cachedUser = loadAuthCache();
+      const validPortalSessionToken = loadPortalSessionToken();
 
       // 캐시가 있으면 포털 즉시 표시 + 접속 로그 기록
       if (cachedUser) {
@@ -1474,8 +1496,14 @@ function showPortal(user) {
         cancel_on_tap_outside: false
       });
 
-      // 캐시가 없는 첫 사용자만 One Tap / Google 버튼 표시
-      // 캐시 사용자는 이미 포털을 보고 있고, 아래 호출은 뒤에서 재확인 용도
+      // 사용자 캐시와 유효한 서명 세션이 모두 있으면 이미 로그인된 상태입니다.
+      // 이때 One Tap을 다시 호출하면 화면 상단에 Google 로그인 창이 반복 표시됩니다.
+      if (cachedUser && validPortalSessionToken) {
+        google.accounts.id.cancel();
+        return;
+      }
+
+      // 최초 로그인 또는 서명 세션이 만료된 경우에만 One Tap 표시
       google.accounts.id.prompt(function (notification) {
         if (
           notification.isSkippedMoment() ||
