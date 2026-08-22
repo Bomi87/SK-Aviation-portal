@@ -156,6 +156,48 @@ const PORTAL_APP_RULES = [
 
 
 let PORTAL_AUTH_STARTED = false;
+let PORTAL_SESSION_CHECK_STARTED = false;
+
+
+/* =========================================================
+   포털에서 전달된 서명 세션 읽기
+
+   URL fragment는 서버와 Referrer에 전송되지 않습니다.
+   읽은 즉시 주소에서 제거합니다.
+========================================================= */
+
+function portalTakeSignedSessionToken() {
+  try {
+    const rawHash = window.location.hash
+      ? window.location.hash.slice(1)
+      : "";
+
+    if (!rawHash) return "";
+
+    const params = new URLSearchParams(rawHash);
+    const token = String(
+      params.get("portalSessionToken") || ""
+    ).trim();
+
+    if (!token) return "";
+
+    params.delete("portalSessionToken");
+
+    const cleanHash = params.toString();
+    const cleanUrl =
+      window.location.pathname +
+      window.location.search +
+      (cleanHash ? "#" + cleanHash : "");
+
+    window.history.replaceState(null, "", cleanUrl);
+    return token;
+
+  } catch (err) {
+    return "";
+  }
+}
+
+const PORTAL_SIGNED_SESSION_TOKEN = portalTakeSignedSessionToken();
 
 
 /* =========================================================
@@ -402,6 +444,17 @@ function portalShowApp(user, appId) {
   if (!portalCanAccessApp(user, appId)) {
     portalClearSessionApproval();
 
+
+setTimeout(function () {
+  if (document.documentElement.classList.contains("portal-auth-pending")) {
+    portalShowDenied(
+      "Google 로그인 확인이 지연되고 있습니다.<br>아래 버튼으로 다시 접속해 주세요."
+    );
+  }
+}, 5000);
+
+
+
     portalShowDenied(
       [
         "이 앱에 대한 사용 권한이 없습니다.",
@@ -620,6 +673,30 @@ async function portalCheckApproval(idToken, appId) {
 }
 
 
+async function portalCheckSignedSession(portalSessionToken, appId) {
+  const res = await fetch(
+    PORTAL_AUTH_CONFIG.AUTH_SCRIPT_URL,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        mode: "PORTAL_SESSION_AUTH",
+        portalSessionToken: portalSessionToken,
+        appId: appId,
+        sessionId: CURRENT_PORTAL_SESSION_ID
+      })
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error(
+      "포털 세션 확인 오류 HTTP " + res.status
+    );
+  }
+
+  return await res.json();
+}
+
+
 /* =========================================================
    Google 로그인 결과
 ========================================================= */
@@ -710,7 +787,7 @@ function portalPrepareAuthScreen() {
    - 캐시가 없거나 만료된 경우에만 Google 로그인 실행
 ========================================================= */
 
-function startPortalAuth() {
+async function startPortalAuth() {
   const appId = portalGetCurrentAppId();
 
   if (!appId) {
@@ -718,6 +795,44 @@ function startPortalAuth() {
       "이 앱의 권한 ID가 common-auth.js에 등록되지 않았습니다."
     );
     return;
+  }
+
+  // 포털에서 정상적으로 연 앱은 서명 세션으로 먼저 승인합니다.
+  // 성공하면 Google 로그인 화면을 다시 표시하지 않습니다.
+  if (
+    PORTAL_SIGNED_SESSION_TOKEN &&
+    !PORTAL_SESSION_CHECK_STARTED
+  ) {
+    PORTAL_SESSION_CHECK_STARTED = true;
+
+    try {
+      const sessionResult = await portalCheckSignedSession(
+        PORTAL_SIGNED_SESSION_TOKEN,
+        appId
+      );
+
+      if (sessionResult.ok === true) {
+        sessionResult.permissions =
+          portalNormalizePermissions(sessionResult.permissions);
+
+        portalShowApp(sessionResult, appId);
+        return;
+      }
+
+      if (
+        sessionResult.reason === "APP_NOT_ALLOWED" ||
+        sessionResult.reason === "NOT_APPROVED"
+      ) {
+        portalShowDenied(
+          sessionResult.reason === "APP_NOT_ALLOWED"
+            ? "이 앱에 대한 사용 권한이 없습니다.<br>관리자에게 앱 권한을 요청해 주세요."
+            : "승인되지 않은 계정입니다."
+        );
+        return;
+      }
+    } catch (err) {
+      console.warn("포털 서명 세션 확인 실패", err);
+    }
   }
 
   const cachedUser = portalLoadAuthCache();
@@ -800,12 +915,11 @@ if (document.readyState === "loading") {
 }
 
 
-// Google 로그인 모듈 또는 인증 캐시 확인이 지연되더라도
-// 보호 화면이 visibility:hidden 상태로 영구히 남지 않도록 합니다.
+// 인증 모듈 또는 네트워크가 지연되더라도 흰 화면으로 영구 정지하지 않습니다.
 setTimeout(function () {
   if (document.documentElement.classList.contains("portal-auth-pending")) {
     portalShowDenied(
-      "Google 로그인 확인이 지연되고 있습니다.<br>아래 버튼으로 다시 접속해 주세요."
+      "로그인 확인이 지연되고 있습니다.<br>아래 버튼으로 다시 접속해 주세요."
     );
   }
-}, 5000);
+}, 8000);
