@@ -1,9 +1,10 @@
 {
+  "id": "/SK-Aviation-portal/?pwa=toolbar-v1",
   "name": "SK-Aviation Programs",
   "short_name": "SK-Aviation",
   "description": "SK-Aviation Operations Portal",
-  "start_url": "/SK-Aviation-portal/index.html?v=20260822-3",
-  "scope": "/",
+  "start_url": "/SK-Aviation-portal/index.html?pwa=toolbar-v1",
+  "scope": "/SK-Aviation-portal/",
   "display": "standalone",
   "background_color": "#f4f7fb",
   "theme_color": "#2563eb",
