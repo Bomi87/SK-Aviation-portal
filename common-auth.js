@@ -393,9 +393,13 @@ function portalSaveAuthCache(user) {
       .trim()
       .toUpperCase();
 
-    const expiresAt =
-      Date.now() +
-      PORTAL_AUTH_CONFIG.CACHE_HOURS * 60 * 60 * 1000;
+    // 캐시 사용만으로 만료시간이 계속 연장되지 않도록,
+    // 기존 만료시간이 남아 있으면 그대로 유지합니다.
+    const savedExpiresAt = Number(user.expiresAt || 0);
+    const expiresAt = savedExpiresAt > Date.now()
+      ? savedExpiresAt
+      : Date.now() +
+        PORTAL_AUTH_CONFIG.CACHE_HOURS * 60 * 60 * 1000;
 
     localStorage.setItem(
       PORTAL_AUTH_CONFIG.CACHE_KEY,
