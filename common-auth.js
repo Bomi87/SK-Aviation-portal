@@ -23,6 +23,37 @@
     html.portal-auth-ready #appRoot {
       visibility: visible;
     }
+
+    html.portal-auth-pending body::before {
+      content: "";
+      position: fixed;
+      left: 50%;
+      top: calc(50% - 18px);
+      width: 30px;
+      height: 30px;
+      margin: -15px 0 0 -15px;
+      border: 3px solid #dbeafe;
+      border-top-color: #2563eb;
+      border-radius: 50%;
+      z-index: 2147483646;
+      animation: portalAuthSpin .8s linear infinite;
+    }
+
+    html.portal-auth-pending body::after {
+      content: "앱을 불러오는 중...";
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: calc(50% + 20px);
+      text-align: center;
+      color: #667085;
+      font: 600 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      z-index: 2147483646;
+    }
+
+    @keyframes portalAuthSpin {
+      to { transform: rotate(360deg); }
+    }
   `;
 
   (document.head || document.documentElement).appendChild(style);
@@ -797,6 +828,34 @@ async function startPortalAuth() {
     return;
   }
 
+  // 이미 검증된 공통 캐시가 있으면 네트워크 대기 없이 즉시 표시합니다.
+  const cachedUser = portalLoadAuthCache();
+
+  if (
+    cachedUser &&
+    portalCanAccessApp(cachedUser, appId)
+  ) {
+    portalShowApp(cachedUser, appId);
+    portalLogCachedAccess(cachedUser, appId);
+    return;
+  }
+
+  if (
+    cachedUser &&
+    !portalCanAccessApp(cachedUser, appId)
+  ) {
+    portalShowDenied(
+      [
+        "이 앱에 대한 사용 권한이 없습니다.",
+        "관리자에게 앱 권한을 요청해 주세요.",
+        cachedUser.email ? "계정: " + cachedUser.email : ""
+      ]
+        .filter(Boolean)
+        .join("<br>")
+    );
+    return;
+  }
+
   // 포털에서 정상적으로 연 앱은 서명 세션으로 먼저 승인합니다.
   // 성공하면 Google 로그인 화면을 다시 표시하지 않습니다.
   if (
@@ -833,35 +892,6 @@ async function startPortalAuth() {
     } catch (err) {
       console.warn("포털 서명 세션 확인 실패", err);
     }
-  }
-
-  const cachedUser = portalLoadAuthCache();
-
-  // 캐시에 현재 앱 권한이 있으면 팝업 없이 즉시 표시
-  if (
-    cachedUser &&
-    portalCanAccessApp(cachedUser, appId)
-  ) {
-    portalShowApp(cachedUser, appId);
-    portalLogCachedAccess(cachedUser, appId);
-    return;
-  }
-
-  // 캐시는 있으나 현재 앱 권한이 없으면 로그인 팝업 없이 차단
-  if (
-    cachedUser &&
-    !portalCanAccessApp(cachedUser, appId)
-  ) {
-    portalShowDenied(
-      [
-        "이 앱에 대한 사용 권한이 없습니다.",
-        "관리자에게 앱 권한을 요청해 주세요.",
-        cachedUser.email ? "계정: " + cachedUser.email : ""
-      ]
-        .filter(Boolean)
-        .join("<br>")
-    );
-    return;
   }
 
   portalPrepareAuthScreen();
