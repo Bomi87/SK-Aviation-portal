@@ -402,17 +402,6 @@ function portalShowApp(user, appId) {
   if (!portalCanAccessApp(user, appId)) {
     portalClearSessionApproval();
 
-
-setTimeout(function () {
-  if (document.documentElement.classList.contains("portal-auth-pending")) {
-    portalShowDenied(
-      "Google 로그인 확인이 지연되고 있습니다.<br>아래 버튼으로 다시 접속해 주세요."
-    );
-  }
-}, 5000);
-
-
-
     portalShowDenied(
       [
         "이 앱에 대한 사용 권한이 없습니다.",
@@ -809,3 +798,14 @@ if (document.readyState === "loading") {
 } else {
   startPortalAuth();
 }
+
+
+// Google 로그인 모듈 또는 인증 캐시 확인이 지연되더라도
+// 보호 화면이 visibility:hidden 상태로 영구히 남지 않도록 합니다.
+setTimeout(function () {
+  if (document.documentElement.classList.contains("portal-auth-pending")) {
+    portalShowDenied(
+      "Google 로그인 확인이 지연되고 있습니다.<br>아래 버튼으로 다시 접속해 주세요."
+    );
+  }
+}, 5000);
