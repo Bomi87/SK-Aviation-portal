@@ -76,7 +76,8 @@ const PORTAL_AUTH_CONFIG = {
 
   // 같은 bomi87.github.io 도메인의 앱들이 공통으로 사용하는 로그인 캐시
   // V2로 변경하여 기존 30일 캐시의 사용자명(예: 사용자1)을 즉시 폐기합니다.
-  CACHE_KEY: "bomiPortalAuthCacheV2",
+  // V3: 과거 30일 캐시를 즉시 폐기합니다.
+  CACHE_KEY: "bomiPortalAuthCacheV3",
 
   // Google 승인 팝업 반복 방지를 위한 로그인/권한 캐시 기간
   // ApprovedUsers의 이름/권한 변경이 오래 남지 않도록 1시간만 유지합니다.
