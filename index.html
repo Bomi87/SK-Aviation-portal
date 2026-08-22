@@ -867,9 +867,10 @@
 
     // 승인 성공 기록을 브라우저에 저장해서 다음 접속부터 빠르게 포털 표시
     // common-auth.js와 동일한 캐시 키를 사용합니다.
-    const PORTAL_AUTH_CACHE_KEY = "bomiPortalAuthCacheV2";
+    // V3: 과거 30일 캐시를 즉시 폐기합니다.
+    const PORTAL_AUTH_CACHE_KEY = "bomiPortalAuthCacheV3";
     const PORTAL_ID_TOKEN_KEY = "bomiPortalIdToken";
-    const PORTAL_SESSION_TOKEN_KEY = "bomiPortalSessionTokenV1";
+    const PORTAL_SESSION_TOKEN_KEY = "bomiPortalSessionTokenV2";
     // 권한 변경은 최대 1시간 이내 반영합니다.
     const PORTAL_AUTH_CACHE_HOURS = 1;
 
