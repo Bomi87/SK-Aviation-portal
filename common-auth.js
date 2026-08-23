@@ -80,8 +80,8 @@ const PORTAL_AUTH_CONFIG = {
   CACHE_KEY: "bomiPortalAuthCacheV3",
 
   // Google 승인 팝업 반복 방지를 위한 로그인/권한 캐시 기간
-  // ApprovedUsers의 이름/권한 변경이 오래 남지 않도록 1시간만 유지합니다.
-  CACHE_HOURS: 1
+  // ApprovedUsers의 이름/권한 변경이 오래 남지 않도록 24시간만 유지합니다.
+  CACHE_HOURS: 24
 };
 
 /* =========================================================
