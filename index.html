@@ -871,8 +871,8 @@
     const PORTAL_AUTH_CACHE_KEY = "bomiPortalAuthCacheV3";
     const PORTAL_ID_TOKEN_KEY = "bomiPortalIdToken";
     const PORTAL_SESSION_TOKEN_KEY = "bomiPortalSessionTokenV2";
-    // 권한 변경은 최대 1시간 이내 반영합니다.
-    const PORTAL_AUTH_CACHE_HOURS = 1;
+    // 권한 변경은 최대 24시간 이내 반영합니다.
+    const PORTAL_AUTH_CACHE_HOURS = 24;
 
     // 포털 탭을 완전히 닫으면 sessionStorage가 사라지므로,
     // 다음 포털 접속에서는 자동으로 새로운 세션 ID가 만들어집니다.
