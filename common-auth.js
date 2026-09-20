@@ -184,7 +184,8 @@ const PORTAL_APP_RULES = [
    { id: "ubikais-ats-flight-plan", path: "/UBIKAIS/" },
   { id: "vip-ntm", path: "/VIP_NTM/" },
   { id: "hospital-search", path: "/Hospital/" },
-  { id: "fbo-fee-lookup", path: "/FBO_Fees/" }
+  { id: "fbo-fee-lookup", path: "/FBO_Fees/" },
+  { id: "flight-data-analysis", path: "/FLT_RECORD/" }
 ];
 
 
