@@ -185,7 +185,8 @@ const PORTAL_APP_RULES = [
   { id: "vip-ntm", path: "/VIP_NTM/" },
   { id: "hospital-search", path: "/Hospital/" },
   { id: "fbo-fee-lookup", path: "/FBO_Fees/" },
-  { id: "flight-data-analysis", path: "/FLT_RECORD/" }
+  { id: "flight-data-analysis", path: "/FLT_RECORD/" },
+   { id: "wind-optimal-route", path: "/WIND_ROUTE/" }
 ];
 
 
