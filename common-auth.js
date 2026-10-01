@@ -186,7 +186,8 @@ const PORTAL_APP_RULES = [
   { id: "hospital-search", path: "/Hospital/" },
   { id: "fbo-fee-lookup", path: "/FBO_Fees/" },
   { id: "flight-data-analysis", path: "/FLT_RECORD/" },
-  { id: "wind-optimal-route", path: "/BEST_ROUTE/" }
+  { id: "wind-optimal-route", path: "/BEST_ROUTE/" },
+   { id: "alert-info", path: "/ALERT_INFO/" }
 ];
 
 
