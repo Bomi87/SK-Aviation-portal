@@ -187,7 +187,8 @@ const PORTAL_APP_RULES = [
   { id: "fbo-fee-lookup", path: "/FBO_Fees/" },
   { id: "flight-data-analysis", path: "/FLT_RECORD/" },
   { id: "wind-optimal-route", path: "/BEST_ROUTE/" },
-   { id: "alert-info", path: "/ALERT_INFO/" }
+   { id: "alert-info", path: "/ALERT_INFO/" },
+   { id: "airport-data-search", path: "/Airport_Data_Search/" }
 ];
 
 
