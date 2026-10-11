@@ -161,6 +161,7 @@ const PORTAL_APP_RULES = [
   { id: "receipt-expense-manager", path: "/Receipt/" },
   { id: "sgbac-reservation", path: "/SGBAC/" },
   { id: "cabin-receipt", path: "/Cabin_receipt/" },
+   { id: "crew-duty-dashboard", path: "/FATIGUE/" },
 
   // 동일 경로를 쿼리스트링으로 구분
   {
