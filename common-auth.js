@@ -1,656 +1,966 @@
-<!DOCTYPE html>
-<html lang="ko">
- <head>
-  <meta charset="utf-8"/>
-  <meta content="width=device-width,initial-scale=1" name="viewport"/>
-  <title>
-   CREW DUTY DASHBOARD
-  </title>
-  <style>
-:root {
-    color-scheme:dark;
-    font-family:Inter,system-ui,'Malgun Gothic',sans-serif;
-    background:#0a1220;
-    color:#edf3ff;
-}
-* {
-    box-sizing:border-box;
-}
-body {
-    margin:0;
-}
-header {
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:16px;
-    padding:24px 4%;
-    border-bottom:1px solid #26354a;
-    background:#101d30;
-}
-.sub {
-    color:#97a9c5;
-    font-size:12px;
-}
-.brand {
-    font-size:20px;
-    font-weight:800;
-    letter-spacing:.07em;
-}
-main {
-    padding:22px 4%;
-    max-width:1600px;
-    margin:auto;
-}
-.panel {
-    border:1px solid #2d415a;
-    border-radius:14px;
-    background:#111e31;
-    padding:17px;
-    margin-bottom:18px;
-}
-.controls {
-    display:flex;
-    gap:12px;
-    flex-wrap:wrap;
-    align-items:end;
-}
-.field {
-    display:grid;
-    gap:5px;
-    min-width:180px;
-    flex:1;
-}
-.field label {
-    font-size:12px;
-    color:#9fb3cc;
-}
-input,select,button {
-    color:#edf3ff;
-    background:#152741;
-    border:1px solid #38516d;
-    border-radius:9px;
-    padding:10px 12px;
-    font:inherit;
-}
-button {
-    cursor:pointer;
-}
-button.primary {
-    background:#306bda;
-    border-color:#306bda;
-    font-weight:700;
-}
-button:disabled {
-    opacity:.4;
-    cursor:not-allowed;
-}
-input[type=checkbox] {
-    accent-color:#4e93ff;
-}
-.cards {
-    display:grid;
-    grid-template-columns:repeat(4,minmax(140px,1fr));
-    gap:12px;
-    margin-bottom:18px;
-}
-.card {
-    background:#182940;
-    padding:16px;
-    border-radius:12px;
-    border:1px solid #2c415a;
-}
-.card .val {
-    font-size:30px;
-    font-weight:800;
-    margin:7px 0;
-}
-.muted {
-    color:#98aac3;
-    font-size:12px;
-}
-.warn {
-    color:#ffc06b;
-}
-.bad {
-    color:#ff7f8e;
-}
-.ok {
-    color:#70dfba;
-}
-.unknown {
-    color:#aab8cf;
-}
-.tblwrap {
-    overflow:auto;
-}
-table {
-    border-collapse:collapse;
-    width:100%;
-    font-size:13px;
-    white-space:nowrap;
-}
-th,td {
-    padding:11px 12px;
-    text-align:left;
-    border-bottom:1px solid #283b55;
-}
-th {
-    color:#9fb4cd;
-    background:#14243a;
-    position:sticky;
-    top:0;
-}
-tr:hover {
-    background:#1a304b;
-}
-.pill {
-    font-size:11px;
-    padding:4px 8px;
-    border-radius:20px;
-    background:#26394e;
-}
-.pill.warn {
-    background:#533b18;
-}
-.pill.bad {
-    background:#572634;
-}
-.pill.ok {
-    background:#163f36;
-}
-.pct {
-    height:7px;
-    border-radius:20px;
-    background:#344459;
-    overflow:hidden;
-    min-width:90px;
-    margin-top:6px;
-}
-.fill {
-    height:100%;
-    background:#72d6af;
-}
-.fill.warn {
-    background:#eab65d;
-}
-.fill.bad {
-    background:#f37b87;
-}
-.layout {
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:18px;
-}
-.scroll {
-    height:310px;
-    overflow:auto;
-}
-.trip {
-    display:flex;
-    gap:10px;
-    align-items:center;
-    border-bottom:1px solid #2b3c52;
-    padding:11px 3px;
-    font-size:12px;
-}
-.trip small {
-    color:#94acc7;
-}
-.msg {
-    padding:12px;
-    background:#2e2938;
-    color:#ffcf8b;
-    border-radius:10px;
-    margin-bottom:16px;
-    white-space:pre-wrap;
-}
-h2 {
-    font-size:15px;
-    margin:0 0 15px;
-}
-p {
-    line-height:1.6;
-}
-.hint {
-    color:#9aaac0;
-    font-size:12px;
-}
-footer {
-    padding:20px 4%;
-    color:#889ab0;
-    font-size:11px;
-}
-@media(max-width:950px) {
-    .layout {
-        grid-template-columns:1fr;
-    }
-    .cards {
-        grid-template-columns:repeat(2,1fr);
-    }
-    header {
-        display:block;
-    }
-}
-</style>
- </head>
- <body>
-  <div id="authScreen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#0a1220;color:#edf3ff;font-family:system-ui,'Malgun Gothic',sans-serif;">
-    승인 확인 중...
-  </div>
-  <div id="appRoot" style="display:none;">
-  <header>
-   <div>
-    <div class="brand">
-     CREW DUTY DASHBOARD
-    </div>
-    <div class="sub">
-     ACTUAL OPERATIONS · PLANNED TRIP SIMULATION · DUTY / FLIGHT TIME
-    </div>
-   </div>
-   <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <div id="loginButton">
-    </div>
-    <div class="sub" id="updated">
-     로그인 필요
-    </div>
-   </div>
-  </header>
-  <main>
-   <div class="msg" hidden="" id="message">
-   </div>
-   <section class="panel controls">
-    <div class="field">
-     <label>
-      조회 기준 UTC 날짜
-     </label>
-     <input id="asof" type="date"/>
-    </div>
-    <div class="field">
-     <label>
-      승무원 검색
-     </label>
-     <input id="search" placeholder="이름 검색"/>
-    </div>
-    <div class="field">
-     <label>
-      CREW 구분
-     </label>
-     <select id="kind">
-      <option value="all">
-       전체
-      </option>
-      <option value="pilot">
-       조종사 (PF / PM / ACM)
-      </option>
-      <option value="cabin">
-       객실/기타
-      </option>
-     </select>
-    </div>
-    <div class="field">
-     <label>
-      경고 임계치 (%)
-     </label>
-     <input id="threshold" max="100" min="1" type="number" value="85"/>
-    </div>
-    <button class="primary" id="reload">
-     새로고침
-    </button>
-   </section>
-   <section class="cards">
-    <div class="card">
-     <div class="muted">
-      CREW 인원
-     </div>
-     <div class="val" id="count">
-      —
-     </div>
-    </div>
-    <div class="card">
-     <div class="muted">
-      LIMIT 초과
-     </div>
-     <div class="val bad" id="exceed">
-      —
-     </div>
-    </div>
-    <div class="card">
-     <div class="muted">
-      LIMIT 접근
-     </div>
-     <div class="val warn" id="near">
-      —
-     </div>
-    </div>
-    <div class="card">
-     <div class="muted">
-      LIMIT 미설정 인원
-     </div>
-     <div class="val" id="unconfigured">
-      —
-     </div>
-    </div>
-   </section>
-   <div class="layout">
-    <section class="panel">
-     <h2>
-      예정 TRIP 선택 (실제 기록에 포함된 LEG는 제외)
-     </h2>
-     <div class="controls" style="margin-bottom:10px">
-      <button id="selectall">
-       전체 선택
-      </button>
-      <button id="clear">
-       선택 해제
-      </button>
-      <span class="sub" id="selectedSummary">
-      </span>
-     </div>
-     <div class="scroll" id="trips">
-     </div>
-    </section>
-    <section class="panel">
-     <h2>
-      상세 / 계산 설명
-     </h2>
-     <p class="hint">
-      모든 RAW 시각은 UTC로 계산합니다. G/T 11:30 미만은 연속 DUTY이며 11:30 이상은 분리합니다. 각 예정 비행은 먼저 실제 운항 기록과 중복 여부를 확인합니다. 같은 TRIP의 연속 LEG는 휴식 분리 기준에 따라 DUTY로 묶습니다. PF·PM·ACM은 해당 LEG 전체 BLOCK을 Flight Time으로 계산하며 동일 인원은 중복 집계하지 않습니다.
-     </p>
-     <div class="hint" id="details">
-      승무원을 클릭하면 상세 근무 세그먼트가 표시됩니다.
-     </div>
-    </section>
-   </div>
-   <section class="panel">
-    <h2>
-     CREW 누적시간 · 실제 + 선택 예정 TRIP
-    </h2>
-    <div class="tblwrap">
-     <table>
-      <thead>
-       <tr>
-        <th>
-         CREW
-        </th>
-        <th>
-         유형
-        </th>
-        <th>
-         Duty 7일
-        </th>
-        <th>
-         Duty 28일
-        </th>
-        <th>
-         Duty 365일
-        </th>
-        <th>
-         Flight 7일
-        </th>
-        <th>
-         Flight 28일
-        </th>
-        <th>
-         Flight 365일
-        </th>
-        <th>
-         최고 사용률
-        </th>
-        <th>
-         경고
-        </th>
-       </tr>
-      </thead>
-      <tbody id="rows">
-      </tbody>
-     </table>
-    </div>
-    <p class="hint">
-     시간 표기 HH:MM · 통계 기준: 각 DUTY 완료 시각/각 LEG 완료 시각이 조회 시점 이전이며, 이동식 기간 내에 포함된 기록. 경계를 걸치는 비행시간은 단순 종료시각 귀속 처리하므로 법정 정밀 산정과 차이가 날 수 있습니다.
-    </p>
-   </section>
-  </main>
-  <footer>
-   근무시간 = 연속 DUTY의 (BLOCK + GROUND) + 01:30. 법적 한도 미입력 시 ‘LIMIT 미설정’으로 표시합니다. G/T 11:30 이상 DUTY 분리 규칙은 법정 휴식 충족 판정과 별개입니다.
-  </footer>
-  </div>
-  <script async="" defer="" src="https://accounts.google.com/gsi/client">
-  </script>
-  <script>
-'use strict';
-let DATA=null,SELECTED=new Set(),activePerson=null;
-let SIMULATED_ASOF=null;
-const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const hh=m=>{let sign=m<0?'-':'';
-m=Math.abs(Math.round(m));
-return sign+String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')};
-const utcDate=ms=>new Date(ms).toISOString().slice(0,10);
-const cmp=(a,b)=>a.dep-b.dep;
-function dedupeKey(l){return [l.dateUTC,l.from,l.to,(l.flight||'').toUpperCase(),(l.aircraft||'').toUpperCase()].join('|')}
-// Do not discard a flight merely because route/date matches. Strong match needs flight number or aircraft,
-// plus departure proximity and block agreement. Ambiguities are counted and shown for review.
-function duplicates(actual,p){let same=actual.filter(a=>a.from===p.from&&a.to===p.to&&Math.abs(a.dep-p.dep)<=90*60000&&Math.abs(a.block-p.block)<=45);
-return same.filter(a=>(a.flight&&p.flight&&a.flight.toUpperCase()===p.flight.toUpperCase())||(a.aircraft&&p.aircraft&&a.aircraft.toUpperCase()===p.aircraft.toUpperCase()));
-}
-function tripGroups(legs){let by=new Map();
-for(const l of legs){let k=l.trip?('TRIP:'+l.trip):('DAY:'+l.dateUTC+':'+l.aircraft);
-if(!by.has(k))by.set(k,[]);
-by.get(k).push(l)}
-return [...by.entries()].map(([id,a])=>({id,legs:a.sort(cmp),start:Math.min(...a.map(l=>l.dep)),end:Math.max(...a.map(l=>l.arr)),route:a.map(l=>l.from).concat(a.at(-1).to).join(' → ')})).sort((a,b)=>a.start-b.start)}
-function buildPersonLegs(actual,plans){let map=new Map();
-for(const l of [...actual,...plans])for(const p of l.people){let key=p.name.toLowerCase();
-if(!map.has(key))map.set(key,{name:p.name,kind:p.kind,legs:[]});
-let x=map.get(key);
-if(p.kind==='pilot')x.kind='pilot';
-x.legs.push(l)}return [...map.values()];
-}
-function duties(legs,breakHours){let a=legs.slice().sort(cmp),out=[],group=[];
-const flush=()=>{if(!group.length)return;
-let start=group[0].dep,end=Math.max(...group.map(x=>x.arr));
-let block=group.reduce((s,l)=>s+l.block,0),ground=Math.max(0,Math.round((end-start)/60000)-block);
-out.push({start,end,block,ground,duty:block+ground+DATA.meta.extraDutyMinutes,legs:group.slice()});
-group=[]};
-for(const leg of a){let prior=group.at(-1);
-if(prior&&(leg.dep-prior.arr)/3600000>=breakHours)flush();
-group.push(leg)}flush();
-return out;
-}
-function compute(person,asof){const end=asof+86400000-1, ds=duties(person.legs,DATA.meta.minGroundBreakHours),tot={duty:{},flight:{}},detail={duty:ds};
-for(let days of DATA.meta.windows){let lower=end-days*86400000;
-tot.duty[days]=ds.filter(d=>d.end>lower&&d.end<=end).reduce((s,d)=>s+d.duty,0);
-tot.flight[days]=person.kind==='pilot'?person.legs.filter(l=>l.arr>lower&&l.arr<=end&&l.people.some(p=>p.name.toLowerCase()===person.name.toLowerCase()&&p.kind==='pilot'&&p.flightEligible)).reduce((s,l)=>s+l.block,0):null;
-}return {tot,detail};
-}
-function assess(p,t,threshold){let cfg=DATA.meta.limits[p.kind]||{},seen=false,maxPct=0,top='';
-for(let category of ['duty','flight'])for(let days of DATA.meta.windows){let limit=cfg[category]?.[days];
-if(limit!==null&&limit!==undefined&&Number(limit)>0&&t[category][days]!==null){seen=true;
-let pct=t[category][days]/(Number(limit)*60)*100;
-if(pct>maxPct){maxPct=pct;
-top=category+' '+days+'일';
-}}}
-return {seen,maxPct,top,status:!seen?'미설정':maxPct>100?'초과':maxPct>=threshold?'접근':'정상'};
-}
-function selectPlans(){let chosen=tripGroups(DATA.planned).filter(g=>SELECTED.has(g.id)).flatMap(g=>g.legs),kept=[],skipped=[];
-for(const l of chosen){let found=duplicates(DATA.actual,l);
-if(found.length)skipped.push(l);
-else kept.push(l)}return {kept,skipped};
-}
-function refresh(){if(!DATA)return;
-const selectedLegs=selectPlans().kept;
-// Simulate at the end of the selected future trip, not solely at today's date.
-const inputAsOf=Date.parse($('asof').value+'T00:00:00Z');
-const latestSelected=selectedLegs.length?Math.max(...selectedLegs.map(l=>l.arr)):0;
-const asof=Math.max(inputAsOf,latestSelected?Date.parse(utcDate(latestSelected)+'T00:00:00Z'):inputAsOf);
-SIMULATED_ASOF=asof;
-const threshold=Math.min(100,Math.max(1,Number($('threshold').value)||85));
-const {kept,skipped}=selectPlans(),all=buildPersonLegs(DATA.actual,kept);
-let results=all.map(p=>({...p,...compute(p,asof),assessment:null}));
-// For future trips, flag a limit reached at ANY duty end in the selected trip.
-results.forEach(p=>{
- p.assessment=assess(p,p.tot,threshold);
- const original=p.assessment;
- const futureEnds=selectedLegs.filter(l=>l.people.some(q=>q.name.toLowerCase()===p.name.toLowerCase())).map(l=>l.arr);
- for(const t of futureEnds){
-   const rolling=compute(p,Date.parse(utcDate(t)+'T00:00:00Z')).tot;
-   const a=assess(p,rolling,threshold);
-   if(a.maxPct>original.maxPct){p.assessment=a;}
- }
-});
-results.sort((a,b)=>({초과:0,접근:1,정상:2,미설정:3}[a.assessment.status]-{초과:0,접근:1,정상:2,미설정:3}[b.assessment.status])||(b.assessment.maxPct-a.assessment.maxPct)||a.name.localeCompare(b.name));
-const visible=results.filter(p=>($('kind').value==='all'||p.kind===$('kind').value)&&p.name.toLowerCase().includes($('search').value.trim().toLowerCase()));
-$('count').textContent=visible.length;
-$('exceed').textContent=visible.filter(p=>p.assessment.status==='초과').length;
-$('near').textContent=visible.filter(p=>p.assessment.status==='접근').length;
-$('unconfigured').textContent=visible.filter(p=>p.assessment.status==='미설정').length;
-$('selectedSummary').textContent=`선택 ${SELECTED.size}개 TRIP / 신규 ${kept.length} LEG / 완료 기록과 중복 제외 ${skipped.length} LEG / 집계 기준 ${utcDate(asof)} UTC`; 
-$('rows').innerHTML=visible.map(p=>{let a=p.assessment,cls=a.status==='초과'?'bad':a.status==='접근'?'warn':a.status==='정상'?'ok':'unknown',c=d=>d===null?'—':hh(d);
-return `<tr data-name="${esc(p.name)}"><td><button type="button" class="person" data-key="${esc(p.name.toLowerCase())}">${esc(p.name)}</button></td><td>${p.kind==='pilot'?'Pilot':'Cabin/Other'}</td>${[7,28,365].map(n=>'<td>'+c(p.tot.duty[n])+'</td>').join('')}${[7,28,365].map(n=>'<td>'+c(p.tot.flight[n])+'</td>').join('')}<td>${a.seen?a.maxPct.toFixed(1)+'% <small>'+esc(a.top)+'</small>':'—'}${a.seen?`<div class="pct"><div class="fill ${cls}" style="width:${Math.min(a.maxPct,100)}%"></div></div>`:''}</td><td><span class="pill ${cls}">${a.status==='미설정'?'LIMIT 미설정':a.status}</span></td></tr>`}).join('');
-$('rows').querySelectorAll('.person').forEach(b=>b.onclick=()=>{activePerson=b.dataset.key;
-showDetails(results.find(p=>p.name.toLowerCase()===activePerson))});
-if(activePerson)showDetails(results.find(p=>p.name.toLowerCase()===activePerson));
-}
-function showDetails(p){if(!p){$('details').textContent='승무원을 선택하세요.';
-return}let d=p.detail.duty.filter(x=>x.end<=(SIMULATED_ASOF||Date.parse($('asof').value+'T00:00:00Z'))+86400000-1).slice(-30).reverse();
-$('details').innerHTML='<strong>'+esc(p.name)+'</strong> · '+p.kind+'<div class="tblwrap"><table><thead><tr><th>시작 UTC</th><th>종료 UTC</th><th>LEG</th><th>BLOCK</th><th>G/T</th><th>DUTY</th></tr></thead><tbody>'+d.map(x=>`<tr><td>${new Date(x.start).toISOString().slice(0,16).replace('T',' ')}</td><td>${new Date(x.end).toISOString().slice(0,16).replace('T',' ')}</td><td>${esc(x.legs.map(l=>l.from+'-'+l.to).join(', '))}</td><td>${hh(x.block)}</td><td>${hh(x.ground)}</td><td>${hh(x.duty)}</td></tr>`).join('')+'</tbody></table></div>';
-}
-function showTrips(){let groups=tripGroups(DATA.planned);
-$('trips').innerHTML=groups.map(g=>`<label class="trip"><input type="checkbox" data-trip="${esc(g.id)}" ${SELECTED.has(g.id)?'checked':''}><span><strong>${esc(g.route)}</strong><br><small>${new Date(g.start).toISOString().slice(0,16).replace('T',' ')} UTC · ${g.legs.length} LEG · ${esc(g.id)}</small></span></label>`).join('')||'<p class="hint">표시할 예정 비행이 없습니다.</p>';
-$('trips').querySelectorAll('input[data-trip]').forEach(el=>el.onchange=()=>{if(el.checked)SELECTED.add(el.dataset.trip);
-else SELECTED.delete(el.dataset.trip);
-refresh()});
-}
-// 24-hour common-auth.js cache remains unchanged.
-// Additional Google ID credential is required for every private GAS API request.
-// ID tokens expire (typically around 1 hour); renewal may prompt the user.
-const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbw_hSBOeESSs9C8S_Mf2ORDBrRNCrb4AA30S4pkY_7C6I_b6QKaeaUYA0-dklS3UDXJSA/exec';
-const GOOGLE_CLIENT_ID = '434108168386-jn8hp4mflhn68n98n6m9r1nm6iv7b3qe.apps.googleusercontent.com';
-let idToken = '';
-let tokenExpiryMs = 0;
-let loading = false;
-let requestingToken = false;
-let oauthReady = false;
+/* =========================================================
+   인증 전 화면 깜박임 방지
+   common-auth.js가 실행되는 즉시 보호 화면을 숨기고,
+   인증 결과가 결정된 뒤 한 번만 표시합니다.
+========================================================= */
 
-function authError(message) {
-  const msg = $('message');
-  msg.hidden = false;
-  msg.textContent = message;
-}
+(function portalInstallAuthPendingStyle() {
+  document.documentElement.classList.add("portal-auth-pending");
 
-function receiveCredential(response) {
-  idToken = String(response?.credential || '');
-  if (!idToken) return authError('Google 인증정보를 받지 못했습니다.');
-  try {
-    const p = JSON.parse(atob(idToken.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
-    tokenExpiryMs = Number(p.exp)*1000;
-  } catch (e) { tokenExpiryMs = 0; }
-  requestingToken = false;
-  $('loginButton').style.display='none';
-  load();
-}
-
-function requestCredential() {
-  if (!window.CURRENT_PORTAL_USER) return;
-  if (!window.google?.accounts?.id) {
-    authError('Google 로그인 모듈을 불러오는 중입니다. 잠시 후 새로고침하세요.');
+  if (document.getElementById("portalAuthPendingStyle")) {
     return;
   }
-  if (!oauthReady) {
-    google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: receiveCredential,
-      auto_select: true,
-      cancel_on_tap_outside: false
-    });
-    google.accounts.id.renderButton($('loginButton'),{
-      theme:'outline',size:'large',shape:'pill',text:'continue_with',width:220
-    });
-    oauthReady = true;
-  }
-  $('loginButton').style.display = 'block';
-  if (!requestingToken) {
-    requestingToken = true;
-    google.accounts.id.prompt();
+
+  const style = document.createElement("style");
+  style.id = "portalAuthPendingStyle";
+  style.textContent = `
+    html.portal-auth-pending #authScreen,
+    html.portal-auth-pending #appRoot {
+      visibility: hidden !important;
+    }
+
+    html.portal-auth-ready #authScreen,
+    html.portal-auth-ready #appRoot {
+      visibility: visible;
+    }
+
+    html.portal-auth-pending body::before {
+      content: "";
+      position: fixed;
+      left: 50%;
+      top: calc(50% - 18px);
+      width: 30px;
+      height: 30px;
+      margin: -15px 0 0 -15px;
+      border: 3px solid #dbeafe;
+      border-top-color: #2563eb;
+      border-radius: 50%;
+      z-index: 2147483646;
+      animation: portalAuthSpin .8s linear infinite;
+    }
+
+    html.portal-auth-pending body::after {
+      content: "앱을 불러오는 중...";
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: calc(50% + 20px);
+      text-align: center;
+      color: #667085;
+      font: 600 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      z-index: 2147483646;
+    }
+
+    @keyframes portalAuthSpin {
+      to { transform: rotate(360deg); }
+    }
+  `;
+
+  (document.head || document.documentElement).appendChild(style);
+})();
+
+
+function portalFinishAuthRender() {
+  document.documentElement.classList.remove("portal-auth-pending");
+  document.documentElement.classList.add("portal-auth-ready");
+}
+
+
+const PORTAL_AUTH_CONFIG = {
+  GOOGLE_CLIENT_ID:
+    "434108168386-jn8hp4mflhn68n98n6m9r1nm6iv7b3qe.apps.googleusercontent.com",
+
+  // 인증용 Apps Script Web App URL
+  AUTH_SCRIPT_URL:
+    "https://script.google.com/macros/s/AKfycbzLlWbfUkvKflGGMy7Z4W6dD8PVYGAGYIktA3urbvLX07AZqC7htH3IJH6-bmE6srxf/exec",
+
+  // 같은 bomi87.github.io 도메인의 앱들이 공통으로 사용하는 로그인 캐시
+  // V2로 변경하여 기존 30일 캐시의 사용자명(예: 사용자1)을 즉시 폐기합니다.
+  // V3: 과거 30일 캐시를 즉시 폐기합니다.
+  CACHE_KEY: "bomiPortalAuthCacheV3",
+
+  // Google 승인 팝업 반복 방지를 위한 로그인/권한 캐시 기간
+  // ApprovedUsers의 이름/권한 변경이 오래 남지 않도록 24시간만 유지합니다.
+  CACHE_HOURS: 24
+};
+
+/* =========================================================
+   포털 접속 세션 ID
+
+   포털에서 앱 URL에 portalSessionId를 전달합니다.
+   같은 포털 접속에서 연 모든 앱은 동일한 SessionId로 요약됩니다.
+========================================================= */
+
+const PORTAL_SESSION_ID_KEY = "bomiPortalSessionId";
+
+function portalCreateSessionId() {
+  try {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") {
+      return "PS-" + window.crypto.randomUUID();
+    }
+  } catch (err) {}
+
+  return (
+    "PS-" +
+    Date.now() +
+    "-" +
+    Math.random().toString(36).slice(2, 12)
+  );
+}
+
+function portalGetSessionId() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = String(params.get("portalSessionId") || "").trim();
+
+    if (fromUrl) {
+      sessionStorage.setItem(PORTAL_SESSION_ID_KEY, fromUrl);
+      return fromUrl;
+    }
+
+    let saved = sessionStorage.getItem(PORTAL_SESSION_ID_KEY);
+
+    if (!saved) {
+      // 포털을 거치지 않고 앱에 직접 들어온 경우를 위한 독립 세션
+      saved = portalCreateSessionId();
+      sessionStorage.setItem(PORTAL_SESSION_ID_KEY, saved);
+    }
+
+    return saved;
+  } catch (err) {
+    return portalCreateSessionId();
   }
 }
 
-// POST to GAS through an isolated hidden iframe, no Worker, JSONP or CORS fetch.
-// The reply origin, request ID, and source window are checked.
-function gasBridgePost(payload) {
-  return new Promise((resolve,reject)=>{
-    const frame=document.createElement('iframe');
-    frame.name='crewBridge_'+Math.random().toString(36).slice(2);
-    frame.style.display='none';
-    const form=document.createElement('form');
-    form.method='POST';
-    form.action=BACKEND_URL;
-    form.target=frame.name;
-    form.style.display='none';
-    const reqId=crypto.randomUUID?.() || String(Date.now())+'_'+Math.random();
-    let done=false;
-    function cleanup(){window.removeEventListener('message',onMessage);clearTimeout(timer);frame.remove();form.remove();}
-    function finish(error,result){if(done)return;done=true;cleanup();if(error)reject(error);else resolve(result);}
-    function onMessage(evt){
-      if (!['https://script.google.com','https://script.googleusercontent.com'].includes(evt.origin))return;
-      if(evt.source!==frame.contentWindow)return;
-      if(evt.data?.type!=='CREW_DUTY_REPLY'||evt.data.reqId!==reqId)return;
-      finish(null,evt.data.data);
+const CURRENT_PORTAL_SESSION_ID = portalGetSessionId();
+
+
+
+/* =========================================================
+   앱 경로 ↔ 포털 APP ID 연결
+
+   포털 내부 action 앱과 외부 사이트는 여기에 넣지 않습니다.
+   common-auth.js를 직접 불러오는 GitHub Pages 앱만 등록합니다.
+========================================================= */
+
+const PORTAL_APP_RULES = [
+  { id: "currency-checker", path: "/Currency/" },
+  { id: "uas-trip-prep", path: "/UAS_TRIP/" },
+  { id: "wfs-trip-prep", path: "/WFS_TRIP/" },
+  { id: "subscription-manager", path: "/SUBSCRIPTION/" },
+  { id: "fbo-search", path: "/FBO/" },
+  { id: "katfm-regulation", path: "/ATFM/" },
+  { id: "flight-search", path: "/Flight_Search/" },
+  { id: "factsheet", path: "/FACTSHEET/" },
+  { id: "world-fuel-price", path: "/WFS_FUEL/" },
+  { id: "past-wx", path: "/Past_WX/" },
+  { id: "wx-forecast", path: "/WX_FORECAST/" },
+  { id: "windy-airport-weather-check", path: "/WINDY/" },
+  { id: "faa-artcc-advisory-map", path: "/FAA_ATCSCC/" },
+  { id: "faa-cnd-diagram", path: "/U.S_Airport_Diagram/" },
+  { id: "receipt-expense-manager", path: "/Receipt/" },
+  { id: "sgbac-reservation", path: "/SGBAC/" },
+  { id: "cabin-receipt", path: "/Cabin_receipt/" },
+
+  // 동일 경로를 쿼리스트링으로 구분
+  {
+    id: "hl8080-route",
+    path: "/FLIGHT_MAP/",
+    query: {
+      key: "file",
+      includes: "HL8080.kml"
     }
-    const timer=setTimeout(()=>finish(new Error('GAS 응답 시간 초과 (60초). 배포/iframe 정책을 확인하세요.')),60000);
-    window.addEventListener('message',onMessage);
-    Object.entries({...payload,reqId}).forEach(([key,value])=>{
-      const input=document.createElement('input');input.type='hidden';input.name=key;input.value=String(value);form.appendChild(input);
+  },
+  {
+    id: "hl8372-route",
+    path: "/FLIGHT_MAP/",
+    query: {
+      key: "file",
+      includes: "HL8372.kml"
+    }
+  },
+
+  { id: "opsgroup-news", path: "/OPS_NEWS/" },
+  { id: "japan-slot-checker", path: "/JAPAN_SLOT/" },
+   { id: "ubikais-ats-flight-plan", path: "/UBIKAIS/" },
+  { id: "vip-ntm", path: "/VIP_NTM/" },
+  { id: "hospital-search", path: "/Hospital/" },
+  { id: "fbo-fee-lookup", path: "/FBO_Fees/" },
+  { id: "flight-data-analysis", path: "/FLT_RECORD/" },
+  { id: "wind-optimal-route", path: "/BEST_ROUTE/" },
+   { id: "alert-info", path: "/ALERT_INFO/" },
+   { id: "airport-data-search", path: "/AIRPORT_DATA/" }
+];
+
+
+let PORTAL_AUTH_STARTED = false;
+let PORTAL_SESSION_CHECK_STARTED = false;
+
+
+/* =========================================================
+   포털에서 전달된 서명 세션 읽기
+
+   URL fragment는 서버와 Referrer에 전송되지 않습니다.
+   읽은 즉시 주소에서 제거합니다.
+========================================================= */
+
+function portalTakeSignedSessionToken() {
+  try {
+    const rawHash = window.location.hash
+      ? window.location.hash.slice(1)
+      : "";
+
+    if (!rawHash) return "";
+
+    const params = new URLSearchParams(rawHash);
+    const token = String(
+      params.get("portalSessionToken") || ""
+    ).trim();
+
+    if (!token) return "";
+
+    params.delete("portalSessionToken");
+
+    const cleanHash = params.toString();
+    const cleanUrl =
+      window.location.pathname +
+      window.location.search +
+      (cleanHash ? "#" + cleanHash : "");
+
+    window.history.replaceState(null, "", cleanUrl);
+    return token;
+
+  } catch (err) {
+    return "";
+  }
+}
+
+const PORTAL_SIGNED_SESSION_TOKEN = portalTakeSignedSessionToken();
+
+
+/* =========================================================
+   현재 페이지 APP ID 판별
+========================================================= */
+
+function portalNormalizePath(pathname) {
+  let path = String(pathname || "/");
+
+  if (!path.startsWith("/")) {
+    path = "/" + path;
+  }
+
+  if (!path.endsWith("/")) {
+    const lastPart = path.split("/").pop() || "";
+
+    // index.html 같은 파일명이 아니면 디렉터리 경로로 처리
+    if (!lastPart.includes(".")) {
+      path += "/";
+    }
+  }
+
+  return path;
+}
+
+
+function portalGetCurrentAppId() {
+  const pathname = portalNormalizePath(window.location.pathname);
+  const params = new URLSearchParams(window.location.search);
+
+  // 같은 경로를 사용하는 앱은 쿼리 조건을 먼저 확인
+  const queryMatch = PORTAL_APP_RULES.find(function (rule) {
+    if (!rule.query) return false;
+    if (!pathname.startsWith(rule.path)) return false;
+
+    const value = params.get(rule.query.key) || "";
+    return value.includes(rule.query.includes);
+  });
+
+  if (queryMatch) {
+    return queryMatch.id;
+  }
+
+  // 일반 앱은 경로가 긴 규칙부터 확인
+  const pathMatch = PORTAL_APP_RULES
+    .filter(function (rule) {
+      return !rule.query;
+    })
+    .slice()
+    .sort(function (a, b) {
+      return b.path.length - a.path.length;
+    })
+    .find(function (rule) {
+      return pathname.startsWith(rule.path);
     });
-    document.body.appendChild(frame);document.body.appendChild(form);form.submit();
+
+  return pathMatch ? pathMatch.id : "";
+}
+
+
+/* =========================================================
+   permissions 정리 및 앱 권한 확인
+========================================================= */
+
+function portalNormalizePermissions(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map(function (item) {
+        return String(item || "").trim();
+      })
+      .filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    return value
+      .split(",")
+      .map(function (item) {
+        return item.trim();
+      })
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+
+function portalCanAccessApp(user, appId) {
+  if (!user || !appId) return false;
+
+  const role = String(user.role || "USER")
+    .trim()
+    .toUpperCase();
+
+  const permissions = portalNormalizePermissions(user.permissions);
+
+  if (role === "ADMIN") return true;
+  if (permissions.includes("*")) return true;
+
+  return permissions.includes(appId);
+}
+
+
+/* =========================================================
+   공통 로그인 캐시
+========================================================= */
+
+function portalLoadAuthCache() {
+  try {
+    const raw = localStorage.getItem(PORTAL_AUTH_CONFIG.CACHE_KEY);
+
+    if (!raw) return null;
+
+    const cached = JSON.parse(raw);
+
+    if (
+      !cached.email ||
+      !cached.expiresAt ||
+      Date.now() > Number(cached.expiresAt)
+    ) {
+      localStorage.removeItem(PORTAL_AUTH_CONFIG.CACHE_KEY);
+      return null;
+    }
+
+    const role = String(cached.role || "USER")
+      .trim()
+      .toUpperCase();
+
+    // 이전 형식 캐시는 권한 목록이 없으므로 재로그인
+    if (
+      role !== "ADMIN" &&
+      !Array.isArray(cached.permissions)
+    ) {
+      localStorage.removeItem(PORTAL_AUTH_CONFIG.CACHE_KEY);
+      return null;
+    }
+
+    return {
+      email: String(cached.email || "").trim(),
+      role: role,
+      name: String(cached.name || ""),
+      picture: String(cached.picture || ""),
+      permissions:
+        role === "ADMIN"
+          ? ["*"]
+          : portalNormalizePermissions(cached.permissions),
+      expiresAt: Number(cached.expiresAt)
+    };
+
+  } catch (err) {
+    console.warn("인증 캐시 읽기 실패", err);
+    localStorage.removeItem(PORTAL_AUTH_CONFIG.CACHE_KEY);
+    return null;
+  }
+}
+
+
+function portalSaveAuthCache(user) {
+  try {
+    if (!user || !user.email) return;
+
+    const role = String(user.role || "USER")
+      .trim()
+      .toUpperCase();
+
+    // 캐시 사용만으로 만료시간이 계속 연장되지 않도록,
+    // 기존 만료시간이 남아 있으면 그대로 유지합니다.
+    const savedExpiresAt = Number(user.expiresAt || 0);
+    const expiresAt = savedExpiresAt > Date.now()
+      ? savedExpiresAt
+      : Date.now() +
+        PORTAL_AUTH_CONFIG.CACHE_HOURS * 60 * 60 * 1000;
+
+    localStorage.setItem(
+      PORTAL_AUTH_CONFIG.CACHE_KEY,
+      JSON.stringify({
+        email: String(user.email || "").trim(),
+        role: role,
+        name: String(user.name || ""),
+        picture: String(user.picture || ""),
+        permissions:
+          role === "ADMIN"
+            ? ["*"]
+            : portalNormalizePermissions(user.permissions),
+        expiresAt: expiresAt
+      })
+    );
+
+  } catch (err) {
+    console.warn("인증 캐시 저장 실패", err);
+  }
+}
+
+
+/* =========================================================
+   현재 앱 세션 상태
+========================================================= */
+
+function portalClearSessionApproval() {
+  try {
+    sessionStorage.removeItem("portalApproved");
+    sessionStorage.removeItem("portalApprovedAppId");
+  } catch (err) {}
+}
+
+
+function portalSetSessionApproval(appId) {
+  try {
+    sessionStorage.setItem("portalApproved", "true");
+    sessionStorage.setItem("portalApprovedAppId", appId);
+  } catch (err) {}
+}
+
+
+/* =========================================================
+   인증 완료 알림
+========================================================= */
+
+function portalNotifyApproved(user, appId) {
+  const detail = {
+    user: user,
+    appId: appId
+  };
+
+  try {
+    window.dispatchEvent(
+      new CustomEvent("portal-auth-approved", {
+        detail: detail
+      })
+    );
+  } catch (err) {}
+
+  // 각 앱이 window.startProtectedApp을 정의한 경우 인증 후 실행
+  if (typeof window.startProtectedApp === "function") {
+    try {
+      window.startProtectedApp(detail);
+    } catch (err) {
+      console.error("보호 앱 시작 함수 실행 오류", err);
+    }
+  }
+}
+
+
+/* =========================================================
+   앱 표시 / 차단
+========================================================= */
+
+function portalShowApp(user, appId) {
+  if (!portalCanAccessApp(user, appId)) {
+    portalClearSessionApproval();
+
+
+setTimeout(function () {
+  if (document.documentElement.classList.contains("portal-auth-pending")) {
+    portalShowDenied(
+      "Google 로그인 확인이 지연되고 있습니다.<br>아래 버튼으로 다시 접속해 주세요."
+    );
+  }
+}, 5000);
+
+
+
+    portalShowDenied(
+      [
+        "이 앱에 대한 사용 권한이 없습니다.",
+        "관리자에게 앱 권한을 요청해 주세요.",
+        user && user.email ? "계정: " + user.email : ""
+      ]
+        .filter(Boolean)
+        .join("<br>")
+    );
+
+    return;
+  }
+
+  const role = String(user.role || "USER")
+    .trim()
+    .toUpperCase();
+
+  const normalizedUser = {
+    ...user,
+    role: role,
+    permissions:
+      role === "ADMIN"
+        ? ["*"]
+        : portalNormalizePermissions(user.permissions)
+  };
+
+  const authScreen = document.getElementById("authScreen");
+  const appRoot = document.getElementById("appRoot");
+
+  if (authScreen) {
+    authScreen.style.display = "none";
+  }
+
+  if (appRoot) {
+    appRoot.style.display = "block";
+  }
+
+  portalFinishAuthRender();
+
+  window.CURRENT_PORTAL_USER = normalizedUser;
+  window.CURRENT_PORTAL_APP_ID = appId;
+
+  portalSetSessionApproval(appId);
+  portalSaveAuthCache(normalizedUser);
+  portalNotifyApproved(normalizedUser, appId);
+}
+
+
+function portalShowDenied(message) {
+  portalClearSessionApproval();
+
+  window.CURRENT_PORTAL_USER = null;
+  window.CURRENT_PORTAL_APP_ID = "";
+
+  const authScreen = document.getElementById("authScreen");
+  const appRoot = document.getElementById("appRoot");
+
+  if (appRoot) {
+    appRoot.style.display = "none";
+  }
+
+  if (!authScreen) {
+    portalFinishAuthRender();
+    console.error(message || "접근 권한이 없습니다.");
+    return;
+  }
+
+  authScreen.style.display = "flex";
+  portalFinishAuthRender();
+
+  authScreen.innerHTML = `
+    <div style="
+      width:100%;
+      max-width:420px;
+      background:#fff;
+      border:1px solid #e6ebf2;
+      border-radius:20px;
+      padding:26px;
+      text-align:center;
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR',sans-serif;
+      box-shadow:0 10px 28px rgba(15,23,42,.08);
+    ">
+      <div style="
+        font-size:22px;
+        font-weight:800;
+        margin-bottom:10px;
+        color:#17202a;
+      ">
+        Access Required
+      </div>
+
+      <div style="
+        font-size:14px;
+        line-height:1.6;
+        color:#667085;
+        margin-bottom:16px;
+      ">
+        ${message || "승인된 사용자만 사용할 수 있습니다."}
+      </div>
+
+      <div id="googleButtonWrap"></div>
+    </div>
+  `;
+
+  renderPortalGoogleButton();
+}
+
+
+/* =========================================================
+   Google 로그인 버튼
+========================================================= */
+
+function renderPortalGoogleButton() {
+  const wrap = document.getElementById("googleButtonWrap");
+
+  if (!wrap) return;
+
+  if (
+    !window.google ||
+    !google.accounts ||
+    !google.accounts.id
+  ) {
+    wrap.innerHTML =
+      "Google 로그인 모듈을 불러오지 못했습니다. 새로고침해 주세요.";
+    return;
+  }
+
+  wrap.innerHTML = "";
+
+  const buttonWidth = Math.max(
+    240,
+    Math.min(300, window.innerWidth - 80)
+  );
+
+  google.accounts.id.renderButton(
+    wrap,
+    {
+      theme: "outline",
+      size: "large",
+      width: buttonWidth,
+      text: "continue_with",
+      shape: "pill"
+    }
+  );
+}
+
+
+/* =========================================================
+   Apps Script 승인 확인
+========================================================= */
+
+
+function portalLogCachedAccess(user, appId) {
+  try {
+    const normalizedAppId = String(appId || "").trim();
+
+    if (!normalizedAppId || normalizedAppId === "portal") {
+      return;
+    }
+
+    const sessionKey =
+      "portalAppLogged:" +
+      CURRENT_PORTAL_SESSION_ID +
+      ":" +
+      normalizedAppId;
+
+    if (sessionStorage.getItem(sessionKey) === "true") {
+      return;
+    }
+
+    sessionStorage.setItem(sessionKey, "true");
+
+    fetch(
+      PORTAL_AUTH_CONFIG.AUTH_SCRIPT_URL,
+      {
+        method: "POST",
+        keepalive: true,
+        body: JSON.stringify({
+          mode: "SESSION_APP_UPDATE",
+          sessionId: CURRENT_PORTAL_SESSION_ID,
+          email: user && user.email ? user.email : "",
+          role: user && user.role ? user.role : "",
+          name: user && user.name ? user.name : "",
+          appId: normalizedAppId
+        })
+      }
+    ).catch(function () {
+      sessionStorage.removeItem(sessionKey);
+    });
+
+  } catch (err) {
+    console.warn("세션 요약 전송 실패", err);
+  }
+}
+
+async function portalCheckApproval(idToken, appId) {
+  const res = await fetch(
+    PORTAL_AUTH_CONFIG.AUTH_SCRIPT_URL,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        idToken: idToken,
+        appId: appId,
+        sessionId: CURRENT_PORTAL_SESSION_ID
+      })
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error(
+      "승인 서버 응답 오류 HTTP " + res.status
+    );
+  }
+
+  return await res.json();
+}
+
+
+async function portalCheckSignedSession(portalSessionToken, appId) {
+  const res = await fetch(
+    PORTAL_AUTH_CONFIG.AUTH_SCRIPT_URL,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        mode: "PORTAL_SESSION_AUTH",
+        portalSessionToken: portalSessionToken,
+        appId: appId,
+        sessionId: CURRENT_PORTAL_SESSION_ID
+      })
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error(
+      "포털 세션 확인 오류 HTTP " + res.status
+    );
+  }
+
+  return await res.json();
+}
+
+
+/* =========================================================
+   Google 로그인 결과
+========================================================= */
+
+async function portalHandleCredentialResponse(response) {
+  const appId = portalGetCurrentAppId();
+
+  try {
+    if (!appId) {
+      portalShowDenied(
+        "이 앱의 권한 ID가 common-auth.js에 등록되지 않았습니다."
+      );
+      return;
+    }
+
+    if (!response || !response.credential) {
+      portalShowDenied(
+        "Google 로그인 정보를 가져오지 못했습니다."
+      );
+      return;
+    }
+
+    const result = await portalCheckApproval(
+      response.credential,
+      appId
+    );
+
+    if (result.ok === true) {
+      result.permissions =
+        portalNormalizePermissions(result.permissions);
+
+      portalShowApp(result, appId);
+      return;
+    }
+
+    localStorage.removeItem(PORTAL_AUTH_CONFIG.CACHE_KEY);
+
+    let message =
+      "승인되지 않은 계정입니다.<br>" +
+      "관리자 승인 후 사용 가능합니다.";
+
+    if (result.reason === "APP_NOT_ALLOWED") {
+      message =
+        "승인된 계정이지만 이 앱에 대한 권한이 없습니다.<br>" +
+        "관리자에게 앱 권한을 요청해 주세요.";
+    }
+
+    portalShowDenied(
+      message +
+      (result.email
+        ? "<br>계정: " + result.email
+        : "")
+    );
+
+  } catch (err) {
+    console.error(err);
+
+    portalShowDenied(
+      "승인 확인 중 오류가 발생했습니다. 다시 시도해 주세요."
+    );
+  }
+}
+
+
+/* =========================================================
+   인증 화면 초기 상태
+========================================================= */
+
+function portalPrepareAuthScreen() {
+  const authScreen = document.getElementById("authScreen");
+
+  if (!authScreen) return;
+
+  authScreen.style.display = "flex";
+
+  if (!authScreen.innerHTML.trim()) {
+    authScreen.textContent = "승인 확인 중...";
+  }
+}
+
+
+/* =========================================================
+   인증 시작
+
+   핵심:
+   - 유효한 공통 캐시가 있고 현재 앱 권한이 있으면 즉시 앱 표시
+   - 따라서 앱 이동/포털 복귀 때 Google 승인 팝업이 반복되지 않음
+   - 캐시가 없거나 만료된 경우에만 Google 로그인 실행
+========================================================= */
+
+async function startPortalAuth() {
+  const appId = portalGetCurrentAppId();
+
+  if (!appId) {
+    portalShowDenied(
+      "이 앱의 권한 ID가 common-auth.js에 등록되지 않았습니다."
+    );
+    return;
+  }
+
+  // 이미 검증된 공통 캐시가 있으면 네트워크 대기 없이 즉시 표시합니다.
+  const cachedUser = portalLoadAuthCache();
+
+  if (
+    cachedUser &&
+    portalCanAccessApp(cachedUser, appId)
+  ) {
+    portalShowApp(cachedUser, appId);
+    portalLogCachedAccess(cachedUser, appId);
+    return;
+  }
+
+  if (
+    cachedUser &&
+    !portalCanAccessApp(cachedUser, appId)
+  ) {
+    portalShowDenied(
+      [
+        "이 앱에 대한 사용 권한이 없습니다.",
+        "관리자에게 앱 권한을 요청해 주세요.",
+        cachedUser.email ? "계정: " + cachedUser.email : ""
+      ]
+        .filter(Boolean)
+        .join("<br>")
+    );
+    return;
+  }
+
+  // 포털에서 정상적으로 연 앱은 서명 세션으로 먼저 승인합니다.
+  // 성공하면 Google 로그인 화면을 다시 표시하지 않습니다.
+  if (
+    PORTAL_SIGNED_SESSION_TOKEN &&
+    !PORTAL_SESSION_CHECK_STARTED
+  ) {
+    PORTAL_SESSION_CHECK_STARTED = true;
+
+    try {
+      const sessionResult = await portalCheckSignedSession(
+        PORTAL_SIGNED_SESSION_TOKEN,
+        appId
+      );
+
+      if (sessionResult.ok === true) {
+        sessionResult.permissions =
+          portalNormalizePermissions(sessionResult.permissions);
+
+        portalShowApp(sessionResult, appId);
+        return;
+      }
+
+      if (
+        sessionResult.reason === "APP_NOT_ALLOWED" ||
+        sessionResult.reason === "NOT_APPROVED"
+      ) {
+        portalShowDenied(
+          sessionResult.reason === "APP_NOT_ALLOWED"
+            ? "이 앱에 대한 사용 권한이 없습니다.<br>관리자에게 앱 권한을 요청해 주세요."
+            : "승인되지 않은 계정입니다."
+        );
+        return;
+      }
+    } catch (err) {
+      console.warn("포털 서명 세션 확인 실패", err);
+    }
+  }
+
+  portalPrepareAuthScreen();
+
+  if (
+    !window.google ||
+    !google.accounts ||
+    !google.accounts.id
+  ) {
+    setTimeout(startPortalAuth, 300);
+    return;
+  }
+
+  if (PORTAL_AUTH_STARTED) return;
+
+  PORTAL_AUTH_STARTED = true;
+
+  google.accounts.id.initialize({
+    client_id: PORTAL_AUTH_CONFIG.GOOGLE_CLIENT_ID,
+    callback: portalHandleCredentialResponse,
+    auto_select: true,
+    cancel_on_tap_outside: false
+  });
+
+  google.accounts.id.prompt(function (notification) {
+    if (
+      notification.isNotDisplayed() ||
+      notification.isSkippedMoment() ||
+      notification.isDismissedMoment()
+    ) {
+      renderPortalGoogleButton();
+    }
   });
 }
 
-async function load(){
-  if(!window.CURRENT_PORTAL_USER)return;
-  if(!idToken || Date.now()>tokenExpiryMs-60000){
-    idToken='';
-    requestCredential();
-    return;
-  }
-  if(loading)return;
-  loading=true;
-  $('message').hidden=true;
-  $('updated').textContent='Loading…';
-  try{
-    const data=await gasBridgePost({action:'data',idToken});
-    if(!data || !data.ok)throw Error(data?.error || '백엔드 오류');
-    DATA=data;
-    $('updated').textContent='Loaded '+data.meta.generatedAt+' UTC · Actual '+data.actual.length+' LEG / Planned '+data.planned.length+' LEG';
-    const errors=[...(data.errors?.actual||[]).map(x=>'실제: '+x),...(data.errors?.planned||[]).map(x=>'예정: '+x)];
-    if(errors.length){$('message').hidden=false;$('message').textContent='일부 기록 제외: '+errors.slice(0,12).join(' / ');}
-    SELECTED.clear();activePerson=null;showTrips();refresh();
-  }catch(error){authError('데이터 로딩 오류: '+error.message);$('updated').textContent='Failed';}
-  finally{loading=false;}
+
+/* =========================================================
+   시작
+
+   기존 앱에서 sessionStorage만 보고 먼저 실행하는 것을 방지하기 위해
+   common-auth.js가 로드되는 즉시 현재 앱 승인값을 초기화합니다.
+   인증 성공 후 현재 APP ID로 다시 저장됩니다.
+========================================================= */
+
+portalClearSessionApproval();
+
+if (document.readyState === "loading") {
+  window.addEventListener("DOMContentLoaded", startPortalAuth);
+} else {
+  startPortalAuth();
 }
-$('asof').value=new Date().toISOString().slice(0,10);
-$('asof').min=new Date(Date.now()-365*86400000).toISOString().slice(0,10);
-$('asof').max=new Date(Date.now()+365*86400000).toISOString().slice(0,10);
-['asof','search','kind','threshold'].forEach(id=>$(id).addEventListener(id==='search'?'input':'change',refresh));
-$('reload').onclick=load;
-$('selectall').onclick=()=>{if(!DATA)return;
-tripGroups(DATA.planned).forEach(g=>SELECTED.add(g.id));
-showTrips();
-refresh()};
-$('clear').onclick=()=>{SELECTED.clear();
-showTrips();
-refresh()};
-// Use existing 24-hour portal cache and app permission gate.
-let crewAppStarted = false;
-window.startProtectedApp = function () {
-  if (crewAppStarted) return;
-  crewAppStarted = true;
-  requestCredential();
-};
-(function waitForPortalAuth(){
-  if(window.CURRENT_PORTAL_USER){window.startProtectedApp();return;}
-  setTimeout(waitForPortalAuth,250);
-})();
-</script>
-  <script src="https://bomi87.github.io/SK-Aviation-portal/common-auth.js"></script>
- </body>
-</html>
+
+
+// 인증 모듈 또는 네트워크가 지연되더라도 흰 화면으로 영구 정지하지 않습니다.
+setTimeout(function () {
+  if (document.documentElement.classList.contains("portal-auth-pending")) {
+    portalShowDenied(
+      "로그인 확인이 지연되고 있습니다.<br>아래 버튼으로 다시 접속해 주세요."
+    );
+  }
+}, 8000);
