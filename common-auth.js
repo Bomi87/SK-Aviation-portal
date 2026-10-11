@@ -190,7 +190,7 @@ const PORTAL_APP_RULES = [
   { id: "wind-optimal-route", path: "/BEST_ROUTE/" },
    { id: "alert-info", path: "/ALERT_INFO/" },
    { id: "airport-data-search", path: "/AIRPORT_DATA/" },
-   { id: "crew-duty-dashboard", path: "/CREW_DUTY/" }
+  { id: "crew-duty-dashboard", path: "/FATIGUE/" }
 ];
 
 
