@@ -189,7 +189,8 @@ const PORTAL_APP_RULES = [
   { id: "flight-data-analysis", path: "/FLT_RECORD/" },
   { id: "wind-optimal-route", path: "/BEST_ROUTE/" },
    { id: "alert-info", path: "/ALERT_INFO/" },
-   { id: "airport-data-search", path: "/AIRPORT_DATA/" }
+   { id: "airport-data-search", path: "/AIRPORT_DATA/" },
+   { id: "crew-duty-dashboard", path: "/CREW_DUTY/" }
 ];
 
 
