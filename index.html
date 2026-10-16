@@ -1110,6 +1110,13 @@ function showPortal(user) {
   };
   AUTH_READY = true;
 
+  // 인증 완료 후 대기 중인 Google One Tap 창을 닫습니다.
+  try {
+    if (window.google && google.accounts && google.accounts.id) {
+      google.accounts.id.cancel();
+    }
+  } catch (err) {}
+
   saveAuthCache(CURRENT_USER);
 
   try {
@@ -1546,15 +1553,17 @@ function showPortal(user) {
         cancel_on_tap_outside: false
       });
 
-      // 사용자 캐시와 유효한 서명 세션이 모두 있으면 이미 로그인된 상태입니다.
-      // 이때 One Tap을 다시 호출하면 화면 상단에 Google 로그인 창이 반복 표시됩니다.
-      if (cachedUser && validPortalSessionToken) {
+      // 이미 포털이 열렸거나 24시간 인증 캐시가 유효하면 One Tap을 호출하지 않습니다.
+      // 서명 세션 토큰의 유무는 화면에 로그인 창을 다시 띄울 이유가 아닙니다.
+      if (AUTH_READY || cachedUser) {
         google.accounts.id.cancel();
         return;
       }
 
-      // 최초 로그인 또는 서명 세션이 만료된 경우에만 One Tap 표시
+      // 최초 로그인(캐시 및 유효한 서명 세션이 없는 경우)에만 One Tap 표시
       google.accounts.id.prompt(function (notification) {
+        // 인증 성공 후 도착한 이전 One Tap 알림은 무시합니다.
+        if (AUTH_READY) return;
         if (
           notification.isSkippedMoment() ||
           notification.isDismissedMoment()
@@ -1858,6 +1867,17 @@ function showPortal(user) {
         updated: '2026-04-15',
         order: 1,
         url: 'https://bomi87.github.io/Currency/'
+      },
+      {
+        id: 'crew-duty-dashboard',
+        name: 'Crew Duty Dashboard',
+        description: 'CREW별 실제·예정 운항을 반영한 근무시간 및 비행시간 조회·시뮬레이션.',
+        category: 'Crew',
+        icon: '😴',
+        tags: ['crew', 'duty', 'flight time', 'fatigue', 'schedule'],
+        updated: '2026-10-16',
+        order: 1.1,
+        url: 'https://bomi87.github.io/FATIGUE/'
       },
 
 
