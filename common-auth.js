@@ -242,6 +242,7 @@ const PORTAL_SIGNED_SESSION_TOKEN = portalTakeSignedSessionToken();
  * Stored only in this tab's sessionStorage, not in the 24-hour user cache.
  */
 const PORTAL_TAKEOFF_TOKEN_KEY = 'portalSharedTakeoffTokenV1';
+let portalTakeoffVerificationPromise = null;
 function portalSaveTakeoffToken(token, expiresAt) {
   if (!token) return;
   try { sessionStorage.setItem(PORTAL_TAKEOFF_TOKEN_KEY,
@@ -256,6 +257,9 @@ function portalGetTakeoffToken() {
   return '';
 }
 window.portalTakeoffRequest = async function(payload) {
+  if (!portalGetTakeoffToken() && portalTakeoffVerificationPromise) {
+    await portalTakeoffVerificationPromise;
+  }
   const portalSessionToken = portalGetTakeoffToken();
   const appId = window.CURRENT_PORTAL_APP_ID || portalGetCurrentAppId();
   if (!portalSessionToken) throw new Error('인증 세션이 없습니다. 포털에서 앱을 다시 열어 주세요.');
@@ -268,6 +272,18 @@ window.portalTakeoffRequest = async function(payload) {
   if (!data.ok) throw new Error(data.reason || data.error || '포털 인증/저장 실패');
   return data;
 };
+function portalVerifyTakeoffTokenInBackground(appId) {
+  if (!PORTAL_SIGNED_SESSION_TOKEN) return;
+  portalTakeoffVerificationPromise = portalCheckSignedSession(PORTAL_SIGNED_SESSION_TOKEN, appId)
+    .then(result => {
+      if (result && result.ok === true) {
+        portalSaveTakeoffToken(PORTAL_SIGNED_SESSION_TOKEN, result.sessionExpiresAt);
+      } else {
+        console.warn('T/O session verification failed:', result && result.reason);
+      }
+    })
+    .catch(err => console.warn('T/O session verification unavailable:', err));
+}
 
 
 /* =========================================================
@@ -879,9 +895,9 @@ async function startPortalAuth() {
 
   if (
     cachedUser &&
-    portalCanAccessApp(cachedUser, appId) &&
-    (!isFlightRouteApp || (!PORTAL_SIGNED_SESSION_TOKEN && portalGetTakeoffToken()))
+    portalCanAccessApp(cachedUser, appId)
   ) {
+    if (isFlightRouteApp) portalVerifyTakeoffTokenInBackground(appId);
     portalShowApp(cachedUser, appId);
     portalLogCachedAccess(cachedUser, appId);
     return;
