@@ -238,6 +238,37 @@ function portalTakeSignedSessionToken() {
 
 const PORTAL_SIGNED_SESSION_TOKEN = portalTakeSignedSessionToken();
 
+/* Short-lived server-verified portal proof for shared T/O actions.
+ * Stored only in this tab's sessionStorage, not in the 24-hour user cache.
+ */
+const PORTAL_TAKEOFF_TOKEN_KEY = 'portalSharedTakeoffTokenV1';
+function portalSaveTakeoffToken(token, expiresAt) {
+  if (!token) return;
+  try { sessionStorage.setItem(PORTAL_TAKEOFF_TOKEN_KEY,
+    JSON.stringify({ token: String(token), expiresAt: Number(expiresAt) || Date.now() + 23 * 3600000 })); }
+  catch (_) {}
+}
+function portalGetTakeoffToken() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(PORTAL_TAKEOFF_TOKEN_KEY) || 'null');
+    if (saved && saved.token && saved.expiresAt > Date.now() + 30000) return saved.token;
+  } catch (_) {}
+  return '';
+}
+window.portalTakeoffRequest = async function(payload) {
+  const portalSessionToken = portalGetTakeoffToken();
+  const appId = window.CURRENT_PORTAL_APP_ID || portalGetCurrentAppId();
+  if (!portalSessionToken) throw new Error('인증 세션이 없습니다. 포털에서 앱을 다시 열어 주세요.');
+  const res = await fetch(PORTAL_AUTH_CONFIG.AUTH_SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({ ...payload, portalSessionToken, appId })
+  });
+  if (!res.ok) throw new Error('포털 인증 백엔드 HTTP ' + res.status);
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.reason || data.error || '포털 인증/저장 실패');
+  return data;
+};
+
 
 /* =========================================================
    현재 페이지 APP ID 판별
@@ -771,6 +802,8 @@ async function portalHandleCredentialResponse(response) {
       result.permissions =
         portalNormalizePermissions(result.permissions);
 
+      portalSaveTakeoffToken(result.portalSessionToken, result.sessionExpiresAt);
+
       portalShowApp(result, appId);
       return;
     }
@@ -842,10 +875,12 @@ async function startPortalAuth() {
 
   // 이미 검증된 공통 캐시가 있으면 네트워크 대기 없이 즉시 표시합니다.
   const cachedUser = portalLoadAuthCache();
+  const isFlightRouteApp = appId === 'hl8080-route' || appId === 'hl8372-route';
 
   if (
     cachedUser &&
-    portalCanAccessApp(cachedUser, appId)
+    portalCanAccessApp(cachedUser, appId) &&
+    (!isFlightRouteApp || (!PORTAL_SIGNED_SESSION_TOKEN && portalGetTakeoffToken()))
   ) {
     portalShowApp(cachedUser, appId);
     portalLogCachedAccess(cachedUser, appId);
@@ -885,6 +920,8 @@ async function startPortalAuth() {
       if (sessionResult.ok === true) {
         sessionResult.permissions =
           portalNormalizePermissions(sessionResult.permissions);
+
+        portalSaveTakeoffToken(PORTAL_SIGNED_SESSION_TOKEN, sessionResult.sessionExpiresAt);
 
         portalShowApp(sessionResult, appId);
         return;
