@@ -897,27 +897,10 @@ async function startPortalAuth() {
     cachedUser &&
     portalCanAccessApp(cachedUser, appId)
   ) {
-    if (appId === 'crew-duty-dashboard' && !portalGetTakeoffToken()) {
-      // Cached profile data is not a signed authorization proof for CREW RAW data.
-      // When launched from the portal, verify the URL-fragment proof first.
-      if (PORTAL_SIGNED_SESSION_TOKEN) {
-        try {
-          const proof = await portalCheckSignedSession(PORTAL_SIGNED_SESSION_TOKEN, appId);
-          if (proof && proof.ok === true) {
-            portalSaveTakeoffToken(PORTAL_SIGNED_SESSION_TOKEN, proof.sessionExpiresAt);
-            portalShowApp(proof, appId);
-            return;
-          }
-        } catch (err) { console.warn('CREW signed session refresh failed', err); }
-      }
-      // No server-verified proof: continue to Google One Tap below to renew it.
-      // Do not grant CREW backend access based on the cached profile alone.
-    } else {
-      if (isFlightRouteApp) portalVerifyTakeoffTokenInBackground(appId);
-      portalShowApp(cachedUser, appId);
-      portalLogCachedAccess(cachedUser, appId);
-      return;
-    }
+    if (isFlightRouteApp) portalVerifyTakeoffTokenInBackground(appId);
+    portalShowApp(cachedUser, appId);
+    portalLogCachedAccess(cachedUser, appId);
+    return;
   }
 
   if (
