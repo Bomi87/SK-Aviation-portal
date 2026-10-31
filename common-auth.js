@@ -1,1021 +1,3300 @@
-/* =========================================================
-   인증 전 화면 깜박임 방지
-   common-auth.js가 실행되는 즉시 보호 화면을 숨기고,
-   인증 결과가 결정된 뒤 한 번만 표시합니다.
-========================================================= */
+<!DOCTYPE html>
+<html lang="ko" class="portal-auth-pending">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>BOMI Operations Portal</title>
 
-(function portalInstallAuthPendingStyle() {
-  document.documentElement.classList.add("portal-auth-pending");
+  <!-- 홈 화면 Safari 바로가기 아이콘 설정 -->
+  <meta name="theme-color" content="#2563eb">
 
-  if (document.getElementById("portalAuthPendingStyle")) {
-    return;
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --panel-2: #f8fafc;
+      --text: #17202a;
+      --muted: #667085;
+      --line: #e6ebf2;
+      --primary: #2563eb;
+      --primary-soft: #dbeafe;
+      --shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+    }
+    body.dark {
+      --bg: #0b1220;
+      --panel: #111827;
+      --panel-2: #0f172a;
+      --text: #e5ecf6;
+      --muted: #94a3b8;
+      --line: #233044;
+      --primary: #60a5fa;
+      --primary-soft: rgba(96, 165, 250, 0.16);
+      --shadow: 0 14px 32px rgba(0, 0, 0, 0.35);
+    }
+    * { box-sizing: border-box; }
+    html,
+    body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
+    img,
+    svg {
+      max-width: 100%;
+    }
+
+    /* 새 앱/긴 태그/긴 설명 추가 시 모바일 화면이 가로로 밀리며 zoom-in처럼 보이는 현상 방지 */
+    .topbar,
+    .brand,
+    .brand-text,
+    .chips,
+    .chip,
+    .section-head,
+    .tool-card,
+    .tool-top,
+    .tool-title,
+    .tool-desc,
+    .badges,
+    .badge,
+    .tool-footer,
+    .updated,
+    .btn {
+      min-width: 0;
+    }
+
+    .tool-title,
+    .tool-desc,
+    .badge,
+    .updated {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .wrap {
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+      padding: 16px 18px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+    .brand-logo {
+      width: 52px;
+      height: 52px;
+      object-fit: contain;
+      border-radius: 14px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      padding: 6px;
+      flex: 0 0 auto;
+    }
+    .brand-text {
+      min-width: 0;
+    }
+    .brand-title {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+    .brand-sub {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: 1.35fr 0.65fr;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+    .card, .tool-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .card { padding: 24px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: 32px;
+      line-height: 1.2;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
+    .hero-actions, .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      min-width: 0;
+      max-width: 100%;
+    }
+    .btn, .chip, .icon-btn, input, select {
+      font: inherit;
+    }
+
+    /* 모바일 input 클릭 시 자동 Zoom-in 방지
+       iOS Safari는 input/select/textarea의 computed font-size가 16px 미만이면
+       focus 시 화면을 자동 확대합니다. 포털 내부 공항코드 입력 모달 전체에 공통 적용. */
+    input,
+    select,
+    textarea,
+    button {
+      font-size: 16px !important;
+    }
+
+    #airportCodeModal,
+    #airportCodeModal * {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
+    #airportCodeInput {
+      font-size: 16px !important;
+      line-height: 20px !important;
+      transform: translateZ(0);
+      touch-action: manipulation;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 11px 14px;
+      cursor: pointer;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-soft {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .stat {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+    .stat .k { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+    .stat .v { font-size: 28px; font-weight: 800; }
+    .controls {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+    .field input, .field select {
+      width: 100%;
+      height: 48px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 0 14px;
+      outline: none;
+    }
+    .icon-btn {
+      width: 48px;
+      height: 48px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 14px;
+      cursor: pointer;
+    }
+    .chip {
+      border: 1px solid var(--line);
+      white-space: nowrap;
+      max-width: 100%;
+      background: var(--panel);
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .chip.active {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border-color: transparent;
+    }
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 18px 0 12px;
+    }
+    .section-title { font-size: 20px; font-weight: 800; margin: 0; }
+    .section-meta { color: var(--muted); font-size: 13px; }
+    .section-refresh-btn{
+  width:36px;
+  height:36px;
+  border-radius:12px;
+  font-size:16px;
+  padding:0;
+}
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .tool-card {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      min-height: 240px;
+    }
+    .tool-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .icon {
+      width: 48px;
+      height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      background: var(--primary-soft);
+      font-size: 24px;
+    }
+    .tool-custom-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  display: block;
+  border-radius: 8px;
+}
+    .fav-btn {
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      font-size: 22px;
+      line-height: 1;
+      padding: 0;
+    }
+    .tool-title { margin: 0 0 6px; font-size: 20px; font-weight: 800; }
+    .tool-desc {
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.55;
+      margin-bottom: 14px;
+      min-height: 64px;
+      white-space: pre-line;
+    }
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .badge {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--muted);
+    }
+    .badge.category {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border-color: transparent;
+    }
+    .tool-footer {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .updated { color: var(--muted); font-size: 12px; }
+    .empty {
+      display: none;
+      padding: 26px;
+      text-align: center;
+      border: 1px dashed var(--line);
+      border-radius: 18px;
+      color: var(--muted);
+      background: var(--panel);
+    }
+    .footer {
+      color: var(--muted);
+      text-align: center;
+      padding: 24px 0 8px;
+      font-size: 13px;
+    }
+    code {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 2px 6px;
+    }
+
+    .atis-result-body {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      max-height: 60vh;
+      overflow: auto;
+    }
+    .atis-section-title {
+      font-weight: 800;
+      margin: 12px 0 6px;
+      color: var(--primary);
+    }
+
+   .liveatc-actions{
+  display:none;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:12px;
+  padding-top:10px;
+  border-top:1px solid var(--line);
+}
+
+.atis-phone-group{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.atis-liveatc-group{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-left:auto;
+}
+
+.liveatc-btn,
+.atis-phone-btn{
+  border:0;
+  border-radius:12px;
+  padding:10px 12px;
+  font-size:13px !important;
+  font-weight:700;
+  cursor:pointer;
+  background:#1f6feb;
+  color:#fff;
+  text-decoration:none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+
+.atis-phone-btn{
+  background:#16a34a;
+}
+
+.liveatc-btn.secondary{
+  background:#374151;
+}
+
+.liveatc-note{
+  display:none !important;
+}
+
+.liveatc-btn:active,
+.atis-phone-btn:active{
+  transform:scale(.98);
+}
+
+
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 10, 24, 0.72);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100000;
+    }
+    .loading-overlay.show {
+      display: flex;
+    }
+    .loading-box {
+      width: 300px;
+      max-width: calc(100vw - 40px);
+      padding: 28px 24px;
+      border-radius: 20px;
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .loading-spinner {
+      width: 46px;
+      height: 46px;
+      margin: 0 auto;
+      border-radius: 50%;
+      border: 4px solid rgba(148, 163, 184, 0.28);
+      border-top-color: var(--primary);
+      animation: loadingSpin 0.8s linear infinite;
+    }
+    .loading-title {
+      margin-top: 16px;
+      font-size: 20px;
+      font-weight: 800;
+    }
+    .loading-desc {
+      margin-top: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+    @keyframes loadingSpin {
+      to { transform: rotate(360deg); }
+    }
+.auth-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  padding: 26px;
+  text-align: center;
+}
+
+.auth-logo {
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  border-radius: 18px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  padding: 8px;
+  margin-bottom: 14px;
+}
+
+.auth-title {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.auth-desc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+
+.auth-status {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: 14px;
+  word-break: break-word;
+}
+#googleButtonWrap {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+#googleButtonWrap > div {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+#googleButtonWrap iframe {
+  max-width: 100% !important;
+}
+.user-pill {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 11px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.user-pill.admin {
+  color: var(--primary);
+  background: var(--primary-soft);
+  border-color: transparent;
+}
+@media (max-width: 980px) {
+  .hero { grid-template-columns: 1fr; }
+  .controls { grid-template-columns: 1fr; }
+  .tool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 680px) {
+  /* 모바일 전용: 전체 화면이 zoom-in 된 것처럼 보이지 않도록
+     spacing/font/card 크기 축소 + 가로 overflow 방지 */
+  .controls {
+    display: none;
   }
 
-  const style = document.createElement("style");
-  style.id = "portalAuthPendingStyle";
-  style.textContent = `
-    html.portal-auth-pending #authScreen,
-    html.portal-auth-pending #appRoot {
+  .wrap {
+    width: 100%;
+    max-width: 100%;
+    padding: 9px;
+  }
+
+  h1 {
+    font-size: 22px;
+  }
+
+  .topbar {
+    padding: 8px 10px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    gap: 8px;
+  }
+
+  .brand {
+    gap: 7px;
+    flex: 1 1 auto;
+  }
+
+  .brand-title {
+    font-size: 15.5px;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .brand-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    padding: 3px;
+  }
+
+  .brand-sub {
+    display: none;
+  }
+
+  .user-pill {
+    font-size: 9.5px;
+    padding: 5px 7px;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    font-size: 14px;
+    flex: 0 0 auto;
+  }
+
+  .chips {
+    gap: 4px;
+    margin-bottom: 6px;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .chip {
+    padding: 4px 8px;
+    font-size: 10.8px !important;
+    border-radius: 999px;
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .section-head {
+    margin: 8px 0 7px;
+    gap: 6px;
+  }
+
+  .section-title {
+    font-size: 16px;
+  }
+
+  .section-meta {
+    font-size: 11.5px;
+    white-space: nowrap;
+  }
+
+  .section-refresh-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 13px !important;
+    border-radius: 9px;
+    padding: 0;
+  }
+
+  .tool-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+  }
+
+  .stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .tool-card {
+    min-height: unset;
+    padding: 10px;
+    border-radius: 13px;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .tool-top {
+    margin-bottom: 8px;
+    gap: 8px;
+  }
+
+  .icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    font-size: 17px;
+    flex: 0 0 auto;
+  }
+
+  .tool-custom-icon {
+    width: 21px;
+    height: 21px;
+    border-radius: 5px;
+  }
+
+  .tool-title {
+    font-size: 15.5px;
+    margin-bottom: 4px;
+  }
+
+  .tool-desc {
+    min-height: unset;
+    font-size: 11px;
+    line-height: 1.38;
+    margin-bottom: 8px;
+  }
+
+  .badges {
+    gap: 5px;
+    margin-bottom: 9px;
+  }
+
+  .badge {
+    font-size: 10px;
+    padding: 4px 7px;
+    white-space: normal;
+  }
+
+  .tool-footer {
+    gap: 6px;
+  }
+
+  .tool-footer .btn {
+    padding: 7px 9px;
+    font-size: 12px !important;
+    border-radius: 9px;
+  }
+
+  .updated {
+    font-size: 10.5px;
+  }
+
+  .fav-btn {
+    font-size: 17px;
+    flex: 0 0 auto;
+  }
+}
+
+    /* 인증 결과가 나오기 전에는 로그인 화면과 포털을 모두 숨깁니다.
+       모바일에서 authScreen → portalApp 전환이 보이는 깜박임 방지용입니다. */
+    html.portal-auth-pending body {
       visibility: hidden !important;
     }
 
-    html.portal-auth-ready #authScreen,
-    html.portal-auth-ready #appRoot {
-      visibility: visible;
+    html.portal-auth-ready body {
+      visibility: visible !important;
     }
 
-    html.portal-auth-pending body::before {
-      content: "";
-      position: fixed;
-      left: 50%;
-      top: calc(50% - 18px);
-      width: 30px;
-      height: 30px;
-      margin: -15px 0 0 -15px;
-      border: 3px solid #dbeafe;
-      border-top-color: #2563eb;
-      border-radius: 50%;
-      z-index: 2147483646;
-      animation: portalAuthSpin .8s linear infinite;
+  </style>
+</head>
+<body>
+  <div id="authScreen" class="auth-screen">
+    <div class="auth-card">
+      <img src="SK_LOGO.png" alt="SK Aviation logo" class="auth-logo" />
+      <div class="auth-title">SK-Aviation Programs</div>
+      <div class="auth-desc">
+        Google 계정 승인 여부를 확인 중입니다.<br>
+        승인된 사용자만 포털을 사용할 수 있습니다.
+      </div>
+
+      <button id="manualLoginBtn" class="btn btn-primary" type="button" style="display:none; width:100%;">
+        Google 계정으로 접속
+      </button>
+      <div id="googleButtonWrap" style="display:none; margin-top:12px;"></div>
+
+      <div id="authStatus" class="auth-status">
+        자동 로그인 확인 중...
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap" id="portalApp" style="display:none;">
+    <div class="topbar">
+      <div class="brand">
+        <img src="SK_LOGO.png" alt="SK Aviation logo" class="brand-logo" />
+        <div class="brand-text">
+          <h1 class="brand-title">SK-Aviation Programs</h1>
+        </div>
+      </div>
+     <div style="display:flex; align-items:center; gap:10px;">
+  <div id="userPill" class="user-pill"></div>
+  <button class="icon-btn" id="themeToggle" title="테마 변경">🌙</button>
+</div>
+    </div>
+
+<section>
+  <div class="chips" id="categoryChips"></div>
+</section>
+
+    <section>
+  <div class="section-head">
+  <div style="display:flex; align-items:center; gap:10px;">
+    <h2 class="section-title">My Programs</h2>
+ <button class="icon-btn section-refresh-btn" id="refreshBtn" title="새로고침">🔄️</button>
+  </div>
+  <div class="section-meta" id="resultMeta">0 programs</div>
+</div>
+      <div class="tool-grid" id="toolGrid"></div>
+      <div class="empty" id="emptyState">조건에 맞는 프로그램이 없습니다.</div>
+    </section>
+  </div>
+
+  <script>
+    const GOOGLE_CLIENT_ID = "434108168386-jn8hp4mflhn68n98n6m9r1nm6iv7b3qe.apps.googleusercontent.com";
+    const AUTH_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzLlWbfUkvKflGGMy7Z4W6dD8PVYGAGYIktA3urbvLX07AZqC7htH3IJH6-bmE6srxf/exec";
+    const ATIS_PROXY_URL = 'https://script.google.com/macros/s/AKfycbzAi6T2g512uynDGuvhCTQUcz6wZ_gV6J8p0miphm23gkvh-z3VhK1A5Cxm4rUOe1up7A/exec';
+
+    let CURRENT_USER = null;
+    let AUTH_READY = false;
+    let GOOGLE_AUTH_IN_PROGRESS = false;
+    let PORTAL_SESSION_AUTH_IN_PROGRESS = false;
+
+    // 승인 성공 기록을 브라우저에 저장해서 다음 접속부터 빠르게 포털 표시
+    // common-auth.js와 동일한 캐시 키를 사용합니다.
+    // V3: 과거 30일 캐시를 즉시 폐기합니다.
+    const PORTAL_AUTH_CACHE_KEY = "bomiPortalAuthCacheV3";
+    const PORTAL_ID_TOKEN_KEY = "bomiPortalIdToken";
+    const PORTAL_SESSION_TOKEN_KEY = "bomiPortalSessionTokenV2";
+    // 권한 변경은 최대 24시간 이내 반영합니다.
+    const PORTAL_AUTH_CACHE_HOURS = 24;
+
+    // 포털 탭을 완전히 닫으면 sessionStorage가 사라지므로,
+    // 다음 포털 접속에서는 자동으로 새로운 세션 ID가 만들어집니다.
+    const PORTAL_SESSION_ID_KEY = "bomiPortalSessionId";
+
+    function createPortalSessionId() {
+      try {
+        if (window.crypto && typeof window.crypto.randomUUID === "function") {
+          return "PS-" + window.crypto.randomUUID();
+        }
+      } catch (err) {}
+
+      return (
+        "PS-" +
+        Date.now() +
+        "-" +
+        Math.random().toString(36).slice(2, 12)
+      );
     }
 
-    html.portal-auth-pending body::after {
-      content: "앱을 불러오는 중...";
-      position: fixed;
-      left: 0;
-      right: 0;
-      top: calc(50% + 20px);
-      text-align: center;
-      color: #667085;
-      font: 600 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      z-index: 2147483646;
+    function getPortalSessionId() {
+      try {
+        let sessionId = sessionStorage.getItem(PORTAL_SESSION_ID_KEY);
+
+        if (!sessionId) {
+          sessionId = createPortalSessionId();
+          sessionStorage.setItem(PORTAL_SESSION_ID_KEY, sessionId);
+        }
+
+        return sessionId;
+      } catch (err) {
+        return createPortalSessionId();
+      }
     }
 
-    @keyframes portalAuthSpin {
-      to { transform: rotate(360deg); }
+    const CURRENT_PORTAL_SESSION_ID = getPortalSessionId();
+
+    function saveAuthCache(user) {
+      try {
+        const savedExpiresAt = Number(user && user.expiresAt || 0);
+        const expiresAt = savedExpiresAt > Date.now()
+          ? savedExpiresAt
+          : Date.now() + PORTAL_AUTH_CACHE_HOURS * 60 * 60 * 1000;
+
+        localStorage.setItem(PORTAL_AUTH_CACHE_KEY, JSON.stringify({
+          email: user.email || "",
+          role: user.role || "USER",
+          name: user.name || "",
+          permissions: Array.isArray(user.permissions) ? user.permissions : [],
+          expiresAt: expiresAt
+        }));
+      } catch (err) {
+        console.warn("Auth cache save failed", err);
+      }
     }
-  `;
 
-  (document.head || document.documentElement).appendChild(style);
-})();
+    function loadAuthCache() {
+      try {
+        const raw = localStorage.getItem(PORTAL_AUTH_CACHE_KEY);
+        if (!raw) return null;
 
+        const cached = JSON.parse(raw);
 
-function portalFinishAuthRender() {
-  document.documentElement.classList.remove("portal-auth-pending");
-  document.documentElement.classList.add("portal-auth-ready");
-}
+        if (!cached.expiresAt || Date.now() > cached.expiresAt) {
+          localStorage.removeItem(PORTAL_AUTH_CACHE_KEY);
+          return null;
+        }
 
+        if (!cached.email) {
+          localStorage.removeItem(PORTAL_AUTH_CACHE_KEY);
+          return null;
+        }
 
-const PORTAL_AUTH_CONFIG = {
-  GOOGLE_CLIENT_ID:
-    "434108168386-jn8hp4mflhn68n98n6m9r1nm6iv7b3qe.apps.googleusercontent.com",
+        // 기존 USER 캐시에 permissions가 없으면 새로 로그인하여 권한을 받아오게 처리
+        const cachedRole = String(cached.role || "USER").toUpperCase();
+        if (cachedRole !== "ADMIN" && !Array.isArray(cached.permissions)) {
+          localStorage.removeItem(PORTAL_AUTH_CACHE_KEY);
+          return null;
+        }
 
-  // 인증용 Apps Script Web App URL
-  AUTH_SCRIPT_URL:
-    "https://script.google.com/macros/s/AKfycbzLlWbfUkvKflGGMy7Z4W6dD8PVYGAGYIktA3urbvLX07AZqC7htH3IJH6-bmE6srxf/exec",
+        // ADMIN은 항상 전체 권한
+        if (cachedRole === "ADMIN") {
+          cached.permissions = ["*"];
+        }
 
-  // 같은 bomi87.github.io 도메인의 앱들이 공통으로 사용하는 로그인 캐시
-  // V2로 변경하여 기존 30일 캐시의 사용자명(예: 사용자1)을 즉시 폐기합니다.
-  // V3: 과거 30일 캐시를 즉시 폐기합니다.
-  CACHE_KEY: "bomiPortalAuthCacheV3",
+        return cached;
+      } catch (err) {
+        localStorage.removeItem(PORTAL_AUTH_CACHE_KEY);
+        return null;
+      }
+    }
 
-  // Google 승인 팝업 반복 방지를 위한 로그인/권한 캐시 기간
-  // ApprovedUsers의 이름/권한 변경이 오래 남지 않도록 24시간만 유지합니다.
-  CACHE_HOURS: 24
-};
+function clearAuthCache() {
+  localStorage.removeItem(PORTAL_AUTH_CACHE_KEY);
+  localStorage.removeItem(PORTAL_SESSION_TOKEN_KEY);
 
-/* =========================================================
-   포털 접속 세션 ID
-
-   포털에서 앱 URL에 portalSessionId를 전달합니다.
-   같은 포털 접속에서 연 모든 앱은 동일한 SessionId로 요약됩니다.
-========================================================= */
-
-const PORTAL_SESSION_ID_KEY = "bomiPortalSessionId";
-
-function portalCreateSessionId() {
   try {
-    if (window.crypto && typeof window.crypto.randomUUID === "function") {
-      return "PS-" + window.crypto.randomUUID();
-    }
+    sessionStorage.removeItem("portalApproved");
+    sessionStorage.removeItem(PORTAL_ID_TOKEN_KEY);
   } catch (err) {}
-
-  return (
-    "PS-" +
-    Date.now() +
-    "-" +
-    Math.random().toString(36).slice(2, 12)
-  );
 }
 
-function portalGetSessionId() {
+function savePortalSessionToken(token) {
   try {
-    const params = new URLSearchParams(window.location.search);
-    const fromUrl = String(params.get("portalSessionId") || "").trim();
-
-    if (fromUrl) {
-      sessionStorage.setItem(PORTAL_SESSION_ID_KEY, fromUrl);
-      return fromUrl;
+    if (token) {
+      localStorage.setItem(PORTAL_SESSION_TOKEN_KEY, String(token));
     }
-
-    let saved = sessionStorage.getItem(PORTAL_SESSION_ID_KEY);
-
-    if (!saved) {
-      // 포털을 거치지 않고 앱에 직접 들어온 경우를 위한 독립 세션
-      saved = portalCreateSessionId();
-      sessionStorage.setItem(PORTAL_SESSION_ID_KEY, saved);
-    }
-
-    return saved;
   } catch (err) {
-    return portalCreateSessionId();
+    console.warn("Portal session token save failed", err);
   }
 }
 
-const CURRENT_PORTAL_SESSION_ID = portalGetSessionId();
-
-
-
-/* =========================================================
-   앱 경로 ↔ 포털 APP ID 연결
-
-   포털 내부 action 앱과 외부 사이트는 여기에 넣지 않습니다.
-   common-auth.js를 직접 불러오는 GitHub Pages 앱만 등록합니다.
-========================================================= */
-
-const PORTAL_APP_RULES = [
-  { id: "currency-checker", path: "/Currency/" },
-  { id: "uas-trip-prep", path: "/UAS_TRIP/" },
-  { id: "wfs-trip-prep", path: "/WFS_TRIP/" },
-  { id: "subscription-manager", path: "/SUBSCRIPTION/" },
-  { id: "fbo-search", path: "/FBO/" },
-  { id: "katfm-regulation", path: "/ATFM/" },
-  { id: "flight-search", path: "/Flight_Search/" },
-  { id: "factsheet", path: "/FACTSHEET/" },
-  { id: "world-fuel-price", path: "/WFS_FUEL/" },
-  { id: "past-wx", path: "/Past_WX/" },
-  { id: "wx-forecast", path: "/WX_FORECAST/" },
-  { id: "windy-airport-weather-check", path: "/WINDY/" },
-  { id: "faa-artcc-advisory-map", path: "/FAA_ATCSCC/" },
-  { id: "faa-cnd-diagram", path: "/U.S_Airport_Diagram/" },
-  { id: "receipt-expense-manager", path: "/Receipt/" },
-  { id: "sgbac-reservation", path: "/SGBAC/" },
-  { id: "cabin-receipt", path: "/Cabin_receipt/" },
-  { id: "crew-fatigue-management", path: "/FATIGUE/" },
-
-  // 동일 경로를 쿼리스트링으로 구분
-  {
-    id: "hl8080-route",
-    path: "/FLIGHT_MAP/",
-    query: {
-      key: "file",
-      includes: "HL8080.kml"
-    }
-  },
-  {
-    id: "hl8372-route",
-    path: "/FLIGHT_MAP/",
-    query: {
-      key: "file",
-      includes: "HL8372.kml"
-    }
-  },
-
-  { id: "opsgroup-news", path: "/OPS_NEWS/" },
-  { id: "japan-slot-checker", path: "/JAPAN_SLOT/" },
-   { id: "ubikais-ats-flight-plan", path: "/UBIKAIS/" },
-  { id: "vip-ntm", path: "/VIP_NTM/" },
-  { id: "hospital-search", path: "/Hospital/" },
-  { id: "fbo-fee-lookup", path: "/FBO_Fees/" },
-  { id: "flight-data-analysis", path: "/FLT_RECORD/" },
-  { id: "wind-optimal-route", path: "/BEST_ROUTE/" },
-   { id: "alert-info", path: "/ALERT_INFO/" },
- { id: "airport-data-search", path: "/AIRPORT_DATA/" },
-{ id: "medaire-alert-monitor", path: "/MEDAIRE_ALERT/" }
-];
-
-
-let PORTAL_AUTH_STARTED = false;
-let PORTAL_SESSION_CHECK_STARTED = false;
-
-
-/* =========================================================
-   포털에서 전달된 서명 세션 읽기
-
-   URL fragment는 서버와 Referrer에 전송되지 않습니다.
-   읽은 즉시 주소에서 제거합니다.
-========================================================= */
-
-function portalTakeSignedSessionToken() {
+function loadPortalSessionToken() {
   try {
-    const rawHash = window.location.hash
-      ? window.location.hash.slice(1)
-      : "";
-
-    if (!rawHash) return "";
-
-    const params = new URLSearchParams(rawHash);
     const token = String(
-      params.get("portalSessionToken") || ""
+      localStorage.getItem(PORTAL_SESSION_TOKEN_KEY) || ""
     ).trim();
 
     if (!token) return "";
 
-    params.delete("portalSessionToken");
+    const payloadPart = token.split(".")[0] || "";
+    const base64 = payloadPart
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+    const padded = base64 + "=".repeat((4 - base64.length % 4) % 4);
+    const payload = JSON.parse(decodeURIComponent(
+      Array.prototype.map.call(
+        atob(padded),
+        function (char) {
+          return "%" + ("00" + char.charCodeAt(0).toString(16)).slice(-2);
+        }
+      ).join("")
+    ));
 
-    const cleanHash = params.toString();
-    const cleanUrl =
-      window.location.pathname +
-      window.location.search +
-      (cleanHash ? "#" + cleanHash : "");
+    // 만료 60초 전부터는 다시 로그인하여 새 세션을 발급받습니다.
+    const expiresAtMs = Number(payload.exp || 0) * 1000;
 
-    window.history.replaceState(null, "", cleanUrl);
+    if (!expiresAtMs || Date.now() >= expiresAtMs - 60000) {
+      localStorage.removeItem(PORTAL_SESSION_TOKEN_KEY);
+      return "";
+    }
+
     return token;
-
   } catch (err) {
+    localStorage.removeItem(PORTAL_SESSION_TOKEN_KEY);
     return "";
   }
 }
+function isInAppBrowser() {
+  const ua = navigator.userAgent || "";
 
-const PORTAL_SIGNED_SESSION_TOKEN = portalTakeSignedSessionToken();
-
-/* Short-lived server-verified portal proof for shared T/O actions.
- * Stored only in this tab's sessionStorage, not in the 24-hour user cache.
- */
-const PORTAL_TAKEOFF_TOKEN_KEY = 'portalSharedTakeoffTokenV1';
-let portalTakeoffVerificationPromise = null;
-function portalSaveTakeoffToken(token, expiresAt) {
-  if (!token) return;
-  try { sessionStorage.setItem(PORTAL_TAKEOFF_TOKEN_KEY,
-    JSON.stringify({ token: String(token), expiresAt: Number(expiresAt) || Date.now() + 23 * 3600000 })); }
-  catch (_) {}
-}
-function portalGetTakeoffToken() {
-  try {
-    const saved = JSON.parse(sessionStorage.getItem(PORTAL_TAKEOFF_TOKEN_KEY) || 'null');
-    if (saved && saved.token && saved.expiresAt > Date.now() + 30000) return saved.token;
-  } catch (_) {}
-  return '';
-}
-window.portalTakeoffRequest = async function(payload) {
-  if (!portalGetTakeoffToken() && portalTakeoffVerificationPromise) {
-    await portalTakeoffVerificationPromise;
-  }
-  const portalSessionToken = portalGetTakeoffToken();
-  const appId = window.CURRENT_PORTAL_APP_ID || portalGetCurrentAppId();
-  if (!portalSessionToken) throw new Error('인증 세션이 없습니다. 포털에서 앱을 다시 열어 주세요.');
-  const res = await fetch(PORTAL_AUTH_CONFIG.AUTH_SCRIPT_URL, {
-    method: 'POST',
-    body: JSON.stringify({ ...payload, portalSessionToken, appId })
-  });
-  if (!res.ok) throw new Error('포털 인증 백엔드 HTTP ' + res.status);
-  const data = await res.json();
-  if (!data.ok) throw new Error(data.reason || data.error || '포털 인증/저장 실패');
-  return data;
-};
-function portalVerifyTakeoffTokenInBackground(appId) {
-  if (!PORTAL_SIGNED_SESSION_TOKEN) return;
-  portalTakeoffVerificationPromise = portalCheckSignedSession(PORTAL_SIGNED_SESSION_TOKEN, appId)
-    .then(result => {
-      if (result && result.ok === true) {
-        portalSaveTakeoffToken(PORTAL_SIGNED_SESSION_TOKEN, result.sessionExpiresAt);
-      } else {
-        console.warn('T/O session verification failed:', result && result.reason);
-      }
-    })
-    .catch(err => console.warn('T/O session verification unavailable:', err));
+  return /KAKAOTALK|KAKAOSTORY|KAKAO|Telegram|TelegramBot|FBAN|FBAV|Instagram|Line|NAVER|DaumApps/i.test(ua);
 }
 
+function showInAppBrowserNotice() {
+  if (!isInAppBrowser()) return;
 
-/* =========================================================
-   현재 페이지 APP ID 판별
-========================================================= */
+  const authDesc = document.querySelector(".auth-desc");
+  const authStatus = document.getElementById("authStatus");
 
-function portalNormalizePath(pathname) {
-  let path = String(pathname || "/");
-
-  if (!path.startsWith("/")) {
-    path = "/" + path;
+  if (authDesc) {
+    authDesc.innerHTML = `
+      Google 계정 승인 여부를 확인 중입니다.<br>
+      승인된 사용자만 포털을 사용할 수 있습니다.<br><br>
+      <strong style="color:var(--primary);">
+        카카오톡/텔레그램 내부 브라우저에서는 Google 로그인이 실패할 수 있습니다.
+      </strong><br>
+      화면의 메뉴 버튼(⋯, 공유, 또는 더보기)을 눌러 Safari/Chrome 같은 외부 브라우저에서 열어주세요.
+    `;
   }
 
-  if (!path.endsWith("/")) {
-    const lastPart = path.split("/").pop() || "";
-
-    // index.html 같은 파일명이 아니면 디렉터리 경로로 처리
-    if (!lastPart.includes(".")) {
-      path += "/";
-    }
+  if (authStatus) {
+    authStatus.innerHTML = `
+      인앱 브라우저에서는 로그인이 실패할 수 있습니다.<br>
+      Safari 또는 Chrome에서 여는 것을 권장합니다.
+    `;
   }
-
-  return path;
+}
+    
+function finishPortalAuthRender() {
+  document.documentElement.classList.remove("portal-auth-pending");
+  document.documentElement.classList.add("portal-auth-ready");
 }
 
-
-function portalGetCurrentAppId() {
-  const pathname = portalNormalizePath(window.location.pathname);
-  const params = new URLSearchParams(window.location.search);
-
-  // 같은 경로를 사용하는 앱은 쿼리 조건을 먼저 확인
-  const queryMatch = PORTAL_APP_RULES.find(function (rule) {
-    if (!rule.query) return false;
-    if (!pathname.startsWith(rule.path)) return false;
-
-    const value = params.get(rule.query.key) || "";
-    return value.includes(rule.query.includes);
-  });
-
-  if (queryMatch) {
-    return queryMatch.id;
-  }
-
-  // 일반 앱은 경로가 긴 규칙부터 확인
-  const pathMatch = PORTAL_APP_RULES
-    .filter(function (rule) {
-      return !rule.query;
-    })
-    .slice()
-    .sort(function (a, b) {
-      return b.path.length - a.path.length;
-    })
-    .find(function (rule) {
-      return pathname.startsWith(rule.path);
-    });
-
-  return pathMatch ? pathMatch.id : "";
-}
-
-
-/* =========================================================
-   permissions 정리 및 앱 권한 확인
-========================================================= */
-
-function portalNormalizePermissions(value) {
-  if (Array.isArray(value)) {
-    return value
-      .map(function (item) {
-        return String(item || "").trim();
-      })
-      .filter(Boolean);
-  }
-
-  if (typeof value === "string") {
-    return value
-      .split(",")
-      .map(function (item) {
-        return item.trim();
-      })
-      .filter(Boolean);
-  }
-
-  return [];
-}
-
-
-function portalCanAccessApp(user, appId) {
-  if (!user || !appId) return false;
-
-  const role = String(user.role || "USER")
-    .trim()
-    .toUpperCase();
-
-  const permissions = portalNormalizePermissions(user.permissions);
-
-  if (role === "ADMIN") return true;
-  if (permissions.includes("*")) return true;
-
-  return permissions.includes(appId);
-}
-
-
-/* =========================================================
-   공통 로그인 캐시
-========================================================= */
-
-function portalLoadAuthCache() {
-  try {
-    const raw = localStorage.getItem(PORTAL_AUTH_CONFIG.CACHE_KEY);
-
-    if (!raw) return null;
-
-    const cached = JSON.parse(raw);
-
-    if (
-      !cached.email ||
-      !cached.expiresAt ||
-      Date.now() > Number(cached.expiresAt)
-    ) {
-      localStorage.removeItem(PORTAL_AUTH_CONFIG.CACHE_KEY);
-      return null;
+function setAuthStatus(message) {
+      const el = document.getElementById("authStatus");
+      if (el) el.textContent = message || "";
     }
 
-    const role = String(cached.role || "USER")
-      .trim()
-      .toUpperCase();
+function showManualLogin(message) {
+  finishPortalAuthRender();
+  const btn = document.getElementById("manualLoginBtn");
+  const googleButtonWrap = document.getElementById("googleButtonWrap");
 
-    // 이전 형식 캐시는 권한 목록이 없으므로 재로그인
-    if (
-      role !== "ADMIN" &&
-      !Array.isArray(cached.permissions)
-    ) {
-      localStorage.removeItem(PORTAL_AUTH_CONFIG.CACHE_KEY);
-      return null;
-    }
+  if (btn) btn.style.display = "none";
 
-    return {
-      email: String(cached.email || "").trim(),
-      role: role,
-      name: String(cached.name || ""),
-      picture: String(cached.picture || ""),
-      permissions:
-        role === "ADMIN"
-          ? ["*"]
-          : portalNormalizePermissions(cached.permissions),
-      expiresAt: Number(cached.expiresAt)
-    };
-
-  } catch (err) {
-    console.warn("인증 캐시 읽기 실패", err);
-    localStorage.removeItem(PORTAL_AUTH_CONFIG.CACHE_KEY);
-    return null;
+  if (message) {
+    setAuthStatus(message);
   }
-}
-
-
-function portalSaveAuthCache(user) {
-  try {
-    if (!user || !user.email) return;
-
-    const role = String(user.role || "USER")
-      .trim()
-      .toUpperCase();
-
-    // 캐시 사용만으로 만료시간이 계속 연장되지 않도록,
-    // 기존 만료시간이 남아 있으면 그대로 유지합니다.
-    const savedExpiresAt = Number(user.expiresAt || 0);
-    const expiresAt = savedExpiresAt > Date.now()
-      ? savedExpiresAt
-      : Date.now() +
-        PORTAL_AUTH_CONFIG.CACHE_HOURS * 60 * 60 * 1000;
-
-    localStorage.setItem(
-      PORTAL_AUTH_CONFIG.CACHE_KEY,
-      JSON.stringify({
-        email: String(user.email || "").trim(),
-        role: role,
-        name: String(user.name || ""),
-        picture: String(user.picture || ""),
-        permissions:
-          role === "ADMIN"
-            ? ["*"]
-            : portalNormalizePermissions(user.permissions),
-        expiresAt: expiresAt
-      })
-    );
-
-  } catch (err) {
-    console.warn("인증 캐시 저장 실패", err);
-  }
-}
-
-
-/* =========================================================
-   현재 앱 세션 상태
-========================================================= */
-
-function portalClearSessionApproval() {
-  try {
-    sessionStorage.removeItem("portalApproved");
-    sessionStorage.removeItem("portalApprovedAppId");
-  } catch (err) {}
-}
-
-
-function portalSetSessionApproval(appId) {
-  try {
-    sessionStorage.setItem("portalApproved", "true");
-    sessionStorage.setItem("portalApprovedAppId", appId);
-  } catch (err) {}
-}
-
-
-/* =========================================================
-   인증 완료 알림
-========================================================= */
-
-function portalNotifyApproved(user, appId) {
-  const detail = {
-    user: user,
-    appId: appId
-  };
-
-  try {
-    window.dispatchEvent(
-      new CustomEvent("portal-auth-approved", {
-        detail: detail
-      })
-    );
-  } catch (err) {}
-
-  // 각 앱이 window.startProtectedApp을 정의한 경우 인증 후 실행
-  if (typeof window.startProtectedApp === "function") {
-    try {
-      window.startProtectedApp(detail);
-    } catch (err) {
-      console.error("보호 앱 시작 함수 실행 오류", err);
-    }
-  }
-}
-
-
-/* =========================================================
-   앱 표시 / 차단
-========================================================= */
-
-function portalShowApp(user, appId) {
-  if (!portalCanAccessApp(user, appId)) {
-    portalClearSessionApproval();
-
-
-setTimeout(function () {
-  if (document.documentElement.classList.contains("portal-auth-pending")) {
-    portalShowDenied(
-      "Google 로그인 확인이 지연되고 있습니다.<br>아래 버튼으로 다시 접속해 주세요."
-    );
-  }
-}, 5000);
-
-
-
-    portalShowDenied(
-      [
-        "이 앱에 대한 사용 권한이 없습니다.",
-        "관리자에게 앱 권한을 요청해 주세요.",
-        user && user.email ? "계정: " + user.email : ""
-      ]
-        .filter(Boolean)
-        .join("<br>")
-    );
-
-    return;
-  }
-
-  const role = String(user.role || "USER")
-    .trim()
-    .toUpperCase();
-
-  const normalizedUser = {
-    ...user,
-    role: role,
-    permissions:
-      role === "ADMIN"
-        ? ["*"]
-        : portalNormalizePermissions(user.permissions)
-  };
-
-  const authScreen = document.getElementById("authScreen");
-  const appRoot = document.getElementById("appRoot");
-
-  if (authScreen) {
-    authScreen.style.display = "none";
-  }
-
-  if (appRoot) {
-    appRoot.style.display = "block";
-  }
-
-  portalFinishAuthRender();
-
-  window.CURRENT_PORTAL_USER = normalizedUser;
-  window.CURRENT_PORTAL_APP_ID = appId;
-
-  portalSetSessionApproval(appId);
-  portalSaveAuthCache(normalizedUser);
-  portalNotifyApproved(normalizedUser, appId);
-}
-
-
-function portalShowDenied(message) {
-  portalClearSessionApproval();
-
-  window.CURRENT_PORTAL_USER = null;
-  window.CURRENT_PORTAL_APP_ID = "";
-
-  const authScreen = document.getElementById("authScreen");
-  const appRoot = document.getElementById("appRoot");
-
-  if (appRoot) {
-    appRoot.style.display = "none";
-  }
-
-  if (!authScreen) {
-    portalFinishAuthRender();
-    console.error(message || "접근 권한이 없습니다.");
-    return;
-  }
-
-  authScreen.style.display = "flex";
-  portalFinishAuthRender();
-
-  authScreen.innerHTML = `
-    <div style="
-      width:100%;
-      max-width:420px;
-      background:#fff;
-      border:1px solid #e6ebf2;
-      border-radius:20px;
-      padding:26px;
-      text-align:center;
-      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR',sans-serif;
-      box-shadow:0 10px 28px rgba(15,23,42,.08);
-    ">
-      <div style="
-        font-size:22px;
-        font-weight:800;
-        margin-bottom:10px;
-        color:#17202a;
-      ">
-        Access Required
-      </div>
-
-      <div style="
-        font-size:14px;
-        line-height:1.6;
-        color:#667085;
-        margin-bottom:16px;
-      ">
-        ${message || "승인된 사용자만 사용할 수 있습니다."}
-      </div>
-
-      <div id="googleButtonWrap"></div>
-    </div>
-  `;
-
-  renderPortalGoogleButton();
-}
-
-
-/* =========================================================
-   Google 로그인 버튼
-========================================================= */
-
-function renderPortalGoogleButton() {
-  const wrap = document.getElementById("googleButtonWrap");
-
-  if (!wrap) return;
 
   if (
-    !window.google ||
-    !google.accounts ||
-    !google.accounts.id
+    window.google &&
+    google.accounts &&
+    google.accounts.id &&
+    googleButtonWrap
   ) {
-    wrap.innerHTML =
-      "Google 로그인 모듈을 불러오지 못했습니다. 새로고침해 주세요.";
-    return;
+    googleButtonWrap.style.display = "block";
+    googleButtonWrap.innerHTML = "";
+
+    const buttonWidth = Math.max(240, Math.min(300, window.innerWidth - 80));
+
+    google.accounts.id.renderButton(
+      googleButtonWrap,
+      {
+        theme: document.body.classList.contains("dark") ? "filled_black" : "outline",
+        size: "large",
+        width: buttonWidth,
+        text: "continue_with",
+        shape: "pill"
+      }
+    );
+  } else {
+    if (btn) btn.style.display = "inline-flex";
+  }
+}
+function showPortal(user) {
+  const normalizedRole = String(user && user.role ? user.role : "USER").toUpperCase();
+
+  CURRENT_USER = {
+    ...(user || {}),
+    role: normalizedRole,
+    permissions: normalizedRole === "ADMIN"
+      ? ["*"]
+      : (Array.isArray(user && user.permissions) ? user.permissions : [])
+  };
+  AUTH_READY = true;
+
+  // 인증 완료 후 대기 중인 Google One Tap 창을 닫습니다.
+  try {
+    if (window.google && google.accounts && google.accounts.id) {
+      google.accounts.id.cancel();
+    }
+  } catch (err) {}
+
+  saveAuthCache(CURRENT_USER);
+
+  try {
+    sessionStorage.setItem("portalApproved", "true");
+  } catch (err) {}
+
+      const authScreen = document.getElementById("authScreen");
+      const portalApp = document.getElementById("portalApp");
+      const userPill = document.getElementById("userPill");
+
+      if (authScreen) authScreen.style.display = "none";
+      if (portalApp) portalApp.style.display = "block";
+
+      finishPortalAuthRender();
+
+      if (userPill && user) {
+        const role = String(user.role || "USER").toUpperCase();
+        const email = user.email || "";
+
+        userPill.textContent = role === "ADMIN"
+          ? `ADMIN · ${email}`
+          : `USER · ${email}`;
+
+        userPill.classList.toggle("admin", role === "ADMIN");
+        userPill.style.display = "inline-flex";
+      }
+
+      // 사용자 권한 기준으로 카테고리와 앱 목록을 다시 표시
+      if (typeof populateCategoryControls === "function") {
+        populateCategoryControls();
+      }
+      if (typeof renderTools === "function") {
+        renderTools();
+      }
+
+      restorePortalReturnState();
+    }
+
+    function denyPortal(result) {
+      clearAuthCache();
+
+      const authScreen = document.getElementById("authScreen");
+      const portalApp = document.getElementById("portalApp");
+
+      if (portalApp) portalApp.style.display = "none";
+      if (authScreen) authScreen.style.display = "flex";
+
+      finishPortalAuthRender();
+
+      const reason = result && result.reason ? result.reason : "UNKNOWN";
+
+      let message = "승인되지 않은 계정입니다. 관리자 승인 후 사용 가능합니다.";
+
+      if (reason === "NOT_APPROVED") {
+        message = `승인되지 않은 계정입니다.
+계정: ${result.email || ""}`;
+      } else if (reason === "INVALID_AUDIENCE") {
+        message = "Google Client ID가 일치하지 않습니다. 설정을 확인해 주세요.";
+      } else if (reason === "EMAIL_NOT_VERIFIED") {
+        message = "Google 이메일 인증이 완료되지 않은 계정입니다.";
+      } else if (reason === "SERVER_ERROR") {
+        message = "승인 서버 오류입니다. Apps Script 설정을 확인해 주세요.";
+      }
+
+      showManualLogin(message);
+    }
+
+    async function checkPortalApproval(idToken) {
+      if (!AUTH_READY) {
+        setAuthStatus("승인 목록 확인 중...");
+      }
+
+      const res = await fetch(AUTH_SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          idToken: idToken,
+          appId: "portal",
+          sessionId: CURRENT_PORTAL_SESSION_ID
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error("승인 서버 응답 오류 HTTP " + res.status);
+      }
+
+      return await res.json();
+    }
+
+    async function checkSavedPortalSession(portalSessionToken) {
+      const res = await fetch(AUTH_SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          mode: "PORTAL_SESSION_AUTH",
+          portalSessionToken: portalSessionToken,
+          appId: "portal",
+          sessionId: CURRENT_PORTAL_SESSION_ID
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error("포털 세션 확인 오류 HTTP " + res.status);
+      }
+
+      return await res.json();
+    }
+
+
+    let PORTAL_PERMISSION_REFRESHING = false;
+    let PORTAL_PERMISSION_REFRESH_TIMER = null;
+
+    function setPermissionRefreshUi(isRefreshing) {
+      PORTAL_PERMISSION_REFRESHING = Boolean(isRefreshing);
+
+      if (!refreshBtn) return;
+
+      refreshBtn.disabled = PORTAL_PERMISSION_REFRESHING;
+      refreshBtn.textContent = PORTAL_PERMISSION_REFRESHING ? "⏳" : "🔄️";
+      refreshBtn.title = PORTAL_PERMISSION_REFRESHING
+        ? "승인 정보 다시 확인 중"
+        : "승인 정보 새로고침";
+    }
+
+    function finishPermissionRefresh() {
+      if (PORTAL_PERMISSION_REFRESH_TIMER) {
+        clearTimeout(PORTAL_PERMISSION_REFRESH_TIMER);
+        PORTAL_PERMISSION_REFRESH_TIMER = null;
+      }
+
+      setPermissionRefreshUi(false);
+    }
+
+    function savePortalIdToken(idToken) {
+      try {
+        if (idToken) {
+          sessionStorage.setItem(PORTAL_ID_TOKEN_KEY, idToken);
+        }
+      } catch (err) {
+        console.warn("ID token save failed", err);
+      }
+    }
+
+    function loadValidPortalIdToken() {
+      try {
+        const token = sessionStorage.getItem(PORTAL_ID_TOKEN_KEY);
+        if (!token) return "";
+
+        const parts = token.split(".");
+        if (parts.length !== 3) {
+          sessionStorage.removeItem(PORTAL_ID_TOKEN_KEY);
+          return "";
+        }
+
+        const base64 = parts[1]
+          .replace(/-/g, "+")
+          .replace(/_/g, "/");
+
+        const padded = base64 + "=".repeat((4 - base64.length % 4) % 4);
+        const payload = JSON.parse(decodeURIComponent(
+          Array.prototype.map.call(
+            atob(padded),
+            function (char) {
+              return "%" + ("00" + char.charCodeAt(0).toString(16)).slice(-2);
+            }
+          ).join("")
+        ));
+
+        // 만료 60초 전부터는 재사용하지 않습니다.
+        const expiresAtMs = Number(payload.exp || 0) * 1000;
+
+        if (!expiresAtMs || Date.now() >= expiresAtMs - 60000) {
+          sessionStorage.removeItem(PORTAL_ID_TOKEN_KEY);
+          return "";
+        }
+
+        return token;
+
+      } catch (err) {
+        sessionStorage.removeItem(PORTAL_ID_TOKEN_KEY);
+        return "";
+      }
+    }
+
+
+    function closePermissionLoginModal() {
+      const modal = document.getElementById("permissionLoginModal");
+      if (modal) modal.remove();
+    }
+
+    function showPermissionLoginModal() {
+      closePermissionLoginModal();
+
+      if (
+        !window.google ||
+        !google.accounts ||
+        !google.accounts.id
+      ) {
+        alert("Google 로그인 모듈을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+        return;
+      }
+
+      const modal = document.createElement("div");
+      modal.id = "permissionLoginModal";
+      modal.style.cssText = [
+        "position:fixed",
+        "inset:0",
+        "z-index:200000",
+        "display:flex",
+        "align-items:center",
+        "justify-content:center",
+        "padding:20px",
+        "background:rgba(3,10,24,.72)",
+        "backdrop-filter:blur(3px)",
+        "-webkit-backdrop-filter:blur(3px)"
+      ].join(";");
+
+      modal.innerHTML = `
+        <div style="
+          width:100%;
+          max-width:380px;
+          padding:24px;
+          border-radius:20px;
+          background:var(--panel);
+          color:var(--text);
+          border:1px solid var(--line);
+          box-shadow:var(--shadow);
+          text-align:center;
+        ">
+          <div style="font-size:20px;font-weight:800;margin-bottom:8px;">
+            Google 계정 다시 확인
+          </div>
+          <div style="
+            font-size:14px;
+            line-height:1.55;
+            color:var(--muted);
+            margin-bottom:18px;
+          ">
+            최신 AppPermissions를 불러오려면 아래 버튼으로 Google 계정을 다시 확인해 주세요.
+          </div>
+
+          <div id="permissionGoogleButtonWrap" style="
+            display:flex;
+            justify-content:center;
+            width:100%;
+            overflow:hidden;
+          "></div>
+
+          <button id="permissionLoginCancelBtn" type="button" style="
+            width:100%;
+            margin-top:14px;
+            padding:11px 14px;
+            border-radius:12px;
+            border:1px solid var(--line);
+            background:var(--panel-2);
+            color:var(--text);
+            font:inherit;
+            font-weight:700;
+          ">
+            취소
+          </button>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      const cancelBtn = document.getElementById("permissionLoginCancelBtn");
+      if (cancelBtn) {
+        cancelBtn.addEventListener("click", function () {
+          closePermissionLoginModal();
+          finishPermissionRefresh();
+        });
+      }
+
+      const wrap = document.getElementById("permissionGoogleButtonWrap");
+      if (!wrap) return;
+
+      const buttonWidth = Math.max(
+        240,
+        Math.min(300, window.innerWidth - 80)
+      );
+
+      google.accounts.id.renderButton(
+        wrap,
+        {
+          theme: document.body.classList.contains("dark")
+            ? "filled_black"
+            : "outline",
+          size: "large",
+          width: buttonWidth,
+          text: "continue_with",
+          shape: "pill"
+        }
+      );
+    }
+
+    async function refreshPortalPermissions() {
+      if (PORTAL_PERMISSION_REFRESHING) return;
+
+      setPermissionRefreshUi(true);
+
+      try {
+        // 같은 탭에서 아직 유효한 Google ID 토큰이 있으면
+        // 팝업 없이 최신 권한만 즉시 다시 조회합니다.
+        const savedIdToken = loadValidPortalIdToken();
+
+        if (savedIdToken) {
+          const result = await checkPortalApproval(savedIdToken);
+
+          if (result.ok === true) {
+            savePortalSessionToken(result.portalSessionToken);
+            showPortal(result);
+            finishPermissionRefresh();
+            return;
+          }
+
+          finishPermissionRefresh();
+          denyPortal(result);
+          return;
+        }
+
+        // 토큰이 없거나 만료된 경우에는 One Tap 자동 인증 대신
+        // 사용자가 직접 누를 수 있는 Google 로그인 버튼을 표시합니다.
+        // 포털 화면은 뒤에 그대로 유지됩니다.
+        finishPermissionRefresh();
+        showPermissionLoginModal();
+
+      } catch (err) {
+        console.error("Permission refresh failed", err);
+        finishPermissionRefresh();
+        alert("승인 정보를 다시 확인하지 못했습니다.");
+      }
+    }
+
+    async function handleCredentialResponse(response) {
+      // 이미 승인 확인 중이면 중복 Google 콜백을 처리하지 않습니다.
+      if (GOOGLE_AUTH_IN_PROGRESS) return;
+      GOOGLE_AUTH_IN_PROGRESS = true;
+      try {
+        if (!response || !response.credential) {
+          closePermissionLoginModal();
+          finishPermissionRefresh();
+
+          if (!AUTH_READY) {
+            showManualLogin("Google 로그인 정보를 가져오지 못했습니다.");
+          }
+          return;
+        }
+
+        savePortalIdToken(response.credential);
+
+        if (!AUTH_READY) {
+          setAuthStatus("승인 목록 확인 중...");
+        }
+
+        const result = await checkPortalApproval(response.credential);
+
+        if (result.ok === true) {
+          savePortalSessionToken(result.portalSessionToken);
+          closePermissionLoginModal();
+          showPortal(result);
+          finishPermissionRefresh();
+          return;
+        }
+
+        closePermissionLoginModal();
+        finishPermissionRefresh();
+        denyPortal(result);
+
+      } catch (err) {
+        console.error(err);
+        closePermissionLoginModal();
+        finishPermissionRefresh();
+
+        // 이미 캐시로 포털에 들어간 상태면 일시적 서버 오류 때문에 화면을 막지 않음
+        if (!AUTH_READY) {
+          showManualLogin("승인 확인 중 오류가 발생했습니다. 다시 접속해 주세요.");
+        }
+      } finally {
+        GOOGLE_AUTH_IN_PROGRESS = false;
+      }
+    }
+
+    async function initGoogleAuth() {
+      const cachedUser = loadAuthCache();
+      const validPortalSessionToken = loadPortalSessionToken();
+
+      // 캐시가 있으면 포털 즉시 표시 + 접속 로그 기록
+      if (cachedUser) {
+        showPortal(cachedUser);
+      }
+
+      // 1시간 캐시는 만료됐지만 서명 세션이 유효하면,
+      // Google 창을 띄우지 않고 백엔드에서 최신 권한만 자동 확인합니다.
+      if (!cachedUser && validPortalSessionToken) {
+        PORTAL_SESSION_AUTH_IN_PROGRESS = true;
+        try {
+          const sessionResult = await checkSavedPortalSession(
+            validPortalSessionToken
+          );
+
+          if (sessionResult.ok === true) {
+            showPortal(sessionResult);
+            return;
+          }
+
+          if (
+            sessionResult.reason === "NOT_APPROVED" ||
+            sessionResult.reason === "APP_NOT_ALLOWED"
+          ) {
+            denyPortal(sessionResult);
+            return;
+          }
+
+          localStorage.removeItem(PORTAL_SESSION_TOKEN_KEY);
+        } catch (err) {
+          console.warn("Saved portal session check failed", err);
+        } finally {
+          PORTAL_SESSION_AUTH_IN_PROGRESS = false;
+        }
+      }
+
+      const manualBtn = document.getElementById("manualLoginBtn");
+
+      if (manualBtn) {
+        manualBtn.addEventListener("click", function () {
+          showManualLogin("Google 버튼을 눌러 접속해 주세요.");
+        });
+      }
+
+      if (!window.google || !google.accounts || !google.accounts.id) {
+        if (!cachedUser) {
+          showManualLogin("Google 로그인 모듈을 불러오지 못했습니다. 새로고침해 주세요.");
+        }
+        return;
+      }
+
+      google.accounts.id.cancel();
+
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleCredentialResponse,
+        auto_select: true,
+        cancel_on_tap_outside: false
+      });
+
+      // 이미 포털이 열렸거나 24시간 인증 캐시가 유효하면 One Tap을 호출하지 않습니다.
+      // 서명 세션 토큰의 유무는 화면에 로그인 창을 다시 띄울 이유가 아닙니다.
+      if (AUTH_READY || cachedUser) {
+        google.accounts.id.cancel();
+        return;
+      }
+
+      // 최초 로그인(캐시 및 유효한 서명 세션이 없는 경우)에만 One Tap 표시
+      google.accounts.id.prompt(function (notification) {
+        // 인증 성공 후 도착한 이전 One Tap 알림은 무시합니다.
+        if (AUTH_READY || GOOGLE_AUTH_IN_PROGRESS || PORTAL_SESSION_AUTH_IN_PROGRESS) return;
+        if (
+          notification.isSkippedMoment() ||
+          notification.isDismissedMoment()
+        ) {
+          if (!cachedUser && !AUTH_READY && !GOOGLE_AUTH_IN_PROGRESS) {
+            showManualLogin("자동 확인이 안 되면 아래 Google 버튼으로 접속해 주세요.");
+          }
+        }
+      });
+    }
+
+    const ICAO_TO_IATA = {
+      KABI: 'ABI',
+      KSPI: 'SPI',
+      KCAK: 'CAK',
+      KALB: 'ALB',
+      KABQ: 'ABQ',
+      KAEX: 'AEX',
+      KBFI: 'BFI',
+      PGUM: 'GUM',
+      KAVL: 'AVL',
+      KASE: 'ASE',
+      KACY: 'ACY',
+      KAGS: 'AGS',
+      KAUS: 'AUS',
+      KGRB: 'GRB',
+      KBED: 'BED',
+      KBWI: 'BWI',
+      KBGR: 'BGR',
+      KPAH: 'PAH',
+      KBTR: 'BTR',
+      KBLI: 'BLI',
+      KTOP: 'TOP',
+      KBIL: 'BIL',
+      KBHM: 'BHM',
+      KBIS: 'BIS',
+      KLEX: 'LEX',
+      KBUR: 'BUR',
+      KBOI: 'BOI',
+      KLOU: 'LOU',
+      KBDL: 'BDL',
+      KBRO: 'BRO',
+      KBQK: 'BQK',
+      KBUF: 'BUF',
+      KBTV: 'BTV',
+      KBMI: 'BMI',
+      KCWA: 'CWA',
+      KCHS: 'CHS',
+      KCLT: 'CLT',
+      KCHO: 'CHO',
+      KCHA: 'CHA',
+      KMDW: 'MDW',
+      KRFD: 'RFD',
+      KCVG: 'CVG',
+      KBKL: 'BKL',
+      KCLE: 'CLE',
+      KCOS: 'COS',
+      KCAE: 'CAE',
+      KJQF: 'USA',
+      KCRP: 'CRP',
+      KDFW: 'DFW',
+      KDAL: 'DAL',
+      KMSN: 'MSN',
+      KDAB: 'DAB',
+      KDEN: 'DEN',
+      KDSM: 'DSM',
+      KDTW: 'DTW',
+      KDDC: 'DDC',
+      KDHN: 'DHN',
+      KDBQ: 'DBQ',
+      KDRO: 'DRO',
+      KEGE: 'EGE',
+      KECU: 'ECU',
+      KELP: 'ELP',
+      KEFD: 'EFD',
+      KEKS: 'EKS',
+      KOMA: 'OMA',
+      KEUG: 'EUG',
+      KEVV: 'EVV',
+      PAFA: 'FAI',
+      KFOE: 'FOE',
+      KFLL: 'FLL',
+      KFSM: 'FSM',
+      KFWA: 'FWA',
+      KAFW: 'AFW',
+      KFAT: 'FAT',
+      KSUN: 'SUN',
+      KGNV: 'GNV',
+      KBZN: 'BZN',
+      KGCK: 'GCK',
+      KGYY: 'GYY',
+      KMKE: 'MKE',
+      KIAH: 'IAH',
+      KGRR: 'GRR',
+      KGPI: 'FCA',
+      KGYR: 'GYR',
+      KGFK: 'GFK',
+      KPIA: 'PIA',
+      KROC: 'ROC',
+      KLWB: 'LWB',
+      KWAY: 'WAY',
+      KGSP: 'GSP',
+      KGPT: 'GPT',
+      KGUC: 'GUC',
+      KSYR: 'SYR',
+      KMDT: 'MDT',
+      KATL: 'ATL',
+      KHND: 'HSH',
+      KORL: 'ORL',
+      PHTO: 'ITO',
+      KHOU: 'HOU',
+      PHNL: 'HNL',
+      KPTK: 'PTK',
+      KHSV: 'HSV',
+      KIDA: 'IDA',
+      KIND: 'IND',
+      KJAN: 'JAN',
+      KJAX: 'JAX',
+      KDAY: 'DAY',
+      KJFK: 'JFK',
+      KCMH: 'CMH',
+      KSNA: 'SNA',
+      KTWF: 'TWF',
+      PHOG: 'OGG',
+      KMKC: 'MKC',
+      KMCI: 'MCI',
+      PHKO: 'KOA',
+      KLGA: 'LGA',
+      KLFT: 'LFT',
+      KSTL: 'STL',
+      KLAN: 'LAN',
+      KMWC: 'MWC',
+      KABE: 'ABE',
+      KLWS: 'LWS',
+      PHLI: 'LIH',
+      KLNK: 'LNK',
+      KLIT: 'LIT',
+      KBOS: 'BOS',
+      KLGB: 'LGB',
+      KLAX: 'LAX',
+      KMSY: 'MSY',
+      KMAE: 'MAE',
+      KMLU: 'MLU',
+      KMHT: 'MHT',
+      KMHR: 'MHR',
+      KLAS: 'LAS',
+      KTYS: 'TYS',
+      KBFL: 'BFL',
+      KMLB: 'MLB',
+      KMEM: 'MEM',
+      KILG: 'ILG',
+      KMIA: 'MIA',
+      KMSP: 'MSP',
+      KMOB: 'MOB',
+      KMRY: 'MRY',
+      KMTJ: 'MTJ',
+      KMYR: 'MYR',
+      KAPF: 'APF',
+      KBNA: 'BNA',
+      KCPR: 'CPR',
+      KEWR: 'EWR',
+      KPHF: 'PHF',
+      KIAG: 'IAG',
+      KORF: 'ORF',
+      KSJC: 'SJC',
+      KVGT: 'VGT',
+      KLBF: 'LBF',
+      KXNA: 'XNA',
+      KECP: 'ECP',
+      KOAK: 'OAK',
+      KORD: 'ORD',
+      KONT: 'ONT',
+      KMCO: 'MCO',
+      KOXR: 'OXR',
+      KFMY: 'FMY',
+      KPBI: 'PBI',
+      KPSP: 'PSP',
+      KPMD: 'PMD',
+      KPNS: 'PNS',
+      KPHL: 'PHL',
+      KDVT: 'DVT',
+      KPHX: 'PHX',
+      KIWA: 'AZA',
+      KGSO: 'GSO',
+      KPIT: 'PIT',
+      KPIH: 'PIH',
+      KPDX: 'PDX',
+      KPWM: 'PWM',
+      KPGD: 'PGD',
+      KMLI: 'MLI',
+      KUIN: 'UIN',
+      KRDU: 'RDU',
+      KRDD: 'RDD',
+      KRNO: 'RNO',
+      KRIC: 'RIC',
+      KLCK: 'LCK',
+      KROA: 'ROA',
+      KMFR: 'MFR',
+      KFOD: 'FOD',
+      KDCA: 'DCA',
+      PGRO: 'ROP',
+      KSAC: 'SAC',
+      KSMF: 'SMF',
+      PGSN: 'SPN',
+      KSLC: 'SLC',
+      KSAT: 'SAT',
+      KSAN: 'SAN',
+      KSFO: 'SFO',
+      KSBP: 'SBP',
+      KSFB: 'SFB',
+      KSBA: 'SBA',
+      KSMX: 'SMX',
+      KSRQ: 'SRQ',
+      KSAV: 'SAV',
+      KSEA: 'SEA',
+      KSAA: 'SAA',
+      KSHV: 'SHV',
+      KFSD: 'FSD',
+      KSUX: 'SUX',
+      KSTS: 'STS',
+      KSBN: 'SBN',
+      KRSW: 'RSW',
+      KABY: 'ABY',
+      KGEG: 'GEG',
+      KSGF: 'SGF',
+      KPIE: 'PIE',
+      KSDF: 'SDF',
+      KSWF: 'SWF',
+      KSCK: 'SCK',
+      KPVD: 'PVD',
+      KTLH: 'TLH',
+      KTPA: 'TPA',
+      PANC: 'ANC',
+      KTEB: 'TEB',
+      KTXK: 'TXK',
+      KCID: 'CID',
+      PGWT: 'TIQ',
+      KTOL: 'TOL',
+      KPSC: 'PSC',
+      KTRI: 'TRI',
+      KTUS: 'TUS',
+      KTUL: 'TUL',
+      KHVN: 'HVN',
+      KVNY: 'VNY',
+      PAIW: 'IWK',
+      KGJT: 'GJT',
+      KALW: 'ALW',
+      KIAD: 'IAD',
+      KALO: 'ALO',
+      KHPN: 'HPN',
+      KICT: 'ICT',
+      KOKC: 'OKC',
+      KXWA: 'XWA',
+      KILM: 'ILM',
+      KHDN: 'HDN',
+      KCRW: 'CRW',
+      KNYL: 'YUM',
+      KOPF: 'OPF',
+      KMCC: 'MCC',
+      PTRO: 'ROR',
+      KGON: 'GON',
+      KMKL: 'MKL',
+      KMBS: 'MBS',
+      KMTN: 'MTN',
+      PTPN: 'PNI',
+      KCDW: 'CDW',
+      KACK: 'ACK',
+      KADW: 'ADW',
+      KAGC: 'AGC',
+      KAMA: 'AMA',
+      KAVP: 'AVP',
+      KBAF: 'BAF',
+      KCGI: 'CGI',
+      KCSG: 'CSG',
+      KDPA: 'DPA',
+      KFNT: 'FNT',
+      KHUF: 'HUF',
+      KISP: 'ISP',
+      KLMT: 'LMT',
+      KMAF: 'MAF',
+      KMCN: 'MCN',
+      KMGM: 'MGM',
+      KMWH: 'MWH',
+      KORH: 'ORH',
+      KPAE: 'PAE',
+      KSUS: 'SUS',
+      KYIP: 'YIP',
+      KFAR: 'FAR',
+      KBGM: 'BGM',
+      KNUQ: 'NUQ'
+    };
+
+    const tools = [
+      {
+        id: 'currency-checker',
+        name: 'Currency Checker',
+        description: 'Pilot currency 상태 조회.',
+        category: 'Crew',
+        icon: '✅',
+        tags: ['currency', 'crew', 'status'],
+        updated: '2026-04-15',
+        order: 1,
+        url: 'https://bomi87.github.io/Currency/'
+      },
+      {
+        id: 'crew-fatigue-management',
+        name: 'Crew Fatigue Management',
+        description: '피로관리를 위한 CREW별 실제·예정 운항을 반영한 근무시간 및 승무시간 조회.',
+        category: 'Crew',
+        icon: '😴',
+        tags: ['crew', 'duty', 'flight time', 'fatigue', 'schedule'],
+        updated: '2026-10-16',
+        order: 1.1,
+        url: 'https://bomi87.github.io/FATIGUE/'
+      },
+
+
+
+      {
+        id: 'uas-trip-prep',
+        name: 'UAS Trip CHK',
+        description: 'UAS Trip 운항 준비사항 및 서비스 진행 현황 조회.',
+        category: 'Prep',
+       icon: '<img src="https://bomi87.github.io/UAS_TRIP/UAS_LOGO.jpg" alt="UAS Trip logo" class="tool-custom-icon">',
+        tags: ['uas', 'trip', 'prep', 'service', 'operations'],
+        updated: '2026-06-25',
+        order: 2,
+        url: 'https://bomi87.github.io/UAS_TRIP/'
+      },
+      {
+        id: 'wfs-trip-prep',
+        name: 'WFS Trip CHK',
+        description: 'WFS Trip 운항 준비사항 및 서비스 진행 현황 조회.',
+        category: 'Prep',
+        icon: '<img src="https://bomi87.github.io/WFS_TRIP/WFS_LOGO.png" alt="WFS Trip logo" class="tool-custom-icon">',
+        tags: ['wfs', 'trip', 'prep', 'service', 'operations'],
+        updated: '2026-06-25',
+        order: 2.1,
+        url: 'https://bomi87.github.io/WFS_TRIP/'
+      },
+
+      {
+  id: 'vip-ntm',
+  name: 'RKRR VIP NTM',
+  description: 'RKRR VIP NOTAM 분석.\n실제 운항경로와 영향구역을 지도에서 확인.',
+  category: 'Prep',
+  icon: '🚫',
+  tags: ['notam', 'ntm', 'route', 'rkrr', 'flight'],
+  updated: '2026-07-27',
+  order: 2.2,
+  url: 'https://bomi87.github.io/VIP_NTM/'
+},
+      {
+  id: 'alert-info',
+  name: 'Alert Info',
+  description: 'Schedule 기준 해외공항 및 국가별 Alert 조회.',
+  category: 'Prep',
+  icon: '🚨',
+  tags: ['alert', 'airport', 'country', 'schedule', 'operations'],
+  updated: '2026-10-01',
+  order: 2.3,
+  url: 'https://bomi87.github.io/ALERT_INFO/'
+},
+
+      {
+  id: 'medaire-alert-monitor',
+  name: 'MedAire Alert Monitor',
+  description: 'MedAire Aviation 및 International SOS 항공·보안 Alert를 지도에서 조회.',
+  category: 'Prep',
+  icon: '<img src="https://bomi87.github.io/MEDAIRE_ALERT/MEDAIRE.png" alt="MedAire" class="tool-custom-icon">',
+  tags: ['medaire', 'alert', 'security', 'aviation', 'sos'],
+  updated: '2026-10-31',
+  order: 2.35,
+  url: 'https://bomi87.github.io/MEDAIRE_ALERT/'
+},
+{
+  id: 'wind-optimal-route',
+  name: 'Wind Optimal Route',
+  description: 'GFS 상층풍과 비행거리를 기준으로 최소 ETE Route 계산.',
+  category: 'Prep',
+  icon: '🛣️',
+  tags: ['wind', 'route', 'gfs', 'ete', 'optimization'],
+  updated: '2026-09-25',
+  order: 2.4,
+  url: 'https://bomi87.github.io/BEST_ROUTE/'
+},
+            {
+  id: 'subscription-manager',
+  name: 'Subscription Manager',
+  description: '항공본부 계약 및 구독 현황 조회.\n계약기간, 비용, 만료 예정 항목을 확인.',
+  category: 'Prep',
+  icon: '📋',
+  tags: ['subscription', 'contract', 'crew', 'expiry', 'cost'],
+  updated: '2026-06-21',
+  order: 2.5,
+  url: 'https://bomi87.github.io/SUBSCRIPTION/'
+},
+
+      {
+  id: 'airport-data-search',
+  name: 'Airport Data Search',
+  description: '공항별 운항 참고자료 및 과거 운항기록 통합 조회.',
+  category: 'Airport',
+  icon: '<img src="https://bomi87.github.io/AIRPORT_DATA/Google_map.png" alt="Airport Data Search icon" class="tool-custom-icon">',
+  tags: ['airport', 'data', 'flight ops', 'reference', 'record'],
+  updated: '2026-10-04',
+  order: 1.1,
+  url: 'https://bomi87.github.io/AIRPORT_DATA/'
+},
+      {
+        id: 'fbo-search',
+        name: 'FBO Search',
+        description: '공항별 FBO 및 연락처 조회.',
+        category: 'Airport',
+        icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.11.37 2.3.56 3.58.56a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.07 21 3 13.93 3 5a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.28.19 2.47.56 3.58a1 1 0 0 1-.24 1.01l-2.2 2.2Z" fill="#ec4899"/></svg>',
+        tags: ['FBO', 'airport', 'ops'],
+        updated: '2026-04-15',
+        order: 1.3,
+        url: 'https://bomi87.github.io/FBO/'
+      },
+
+      {
+        id: 'ubikais-ats-flight-plan',
+        name: 'UBIKAIS ATS Flight Plan',
+        description: 'UBIKAIS ATS Flight Plan 조회 및 지도 표출.',
+        category: 'Airport',
+        icon: '🗺️',
+        tags: ['ubikais', 'ats', 'flight plan', 'airport', 'route'],
+        updated: '2026-08-16',
+        order: 1.31,
+        url: 'https://bomi87.github.io/UBIKAIS/'
+      },
+
+      {
+        id: 'sgbac-reservation',
+        name: 'SGBAC 예약현황',
+        description: '김포공항 SGBAC 예약 및 운항 현황 조회.\n계획·예정시간, 항공기, 구간, 운항사 및 비고 확인.',
+        category: 'Airport',
+        icon: '<img src="https://bomi87.github.io/SGBAC/SGBAC_LOGO.png" alt="SGBAC logo" class="tool-custom-icon">',
+        tags: ['sgbac', 'reservation', 'gmp', 'airport', 'operations'],
+        updated: '2026-08-30',
+        order: 1.32,
+        url: 'https://bomi87.github.io/SGBAC/'
+      },
+
+
+
+      {
+        id: 'flight-data-analysis',
+        name: 'Flight Data Analysis',
+        description: '노선별 과거 운항기록 분석.\nFlight / Block / Taxi Time 및 Fuel 데이터를 조회.',
+        category: 'Airport',
+        icon: '📈',
+        tags: ['flight', 'block', 'taxi', 'fuel', 'history', 'analysis'],
+        updated: '2026-09-20',
+        order: 1.5,
+        url: 'https://bomi87.github.io/FLT_RECORD/'
+      },
+
+            {
+        id: 'katfm-regulation',
+        name: 'K-ATFM',
+        description: 'K-ATFM 실시간 조회.',
+        category: 'Airport',
+        icon: '🚦',
+        tags: ['K-ATFM', 'ATFM', 'CTOT', 'regulation', 'airport'],
+        updated: '2026-06-07',
+        order: 2.5,
+        url: 'https://bomi87.github.io/ATFM/'
+      },
+      {
+        id: 'atis-guru',
+        name: 'D-ATIS (U.S & CANADA)',
+        description: 'ICAO 4 LETTER 공항코드를 입력하면 해당 공항의 Digital ATIS 데이터 조회.',
+        category: 'Airport',
+        icon: '📡',
+        tags: ['atis', 'd-atis', 'airport', 'weather'],
+        updated: '2026-04-25',
+        order: 3,
+        action: 'atis-guru'
+      },
+
+       {
+        id: 'flight-search',
+        name: 'Flight_Search',
+        description: 'Airline 항공편 조회',
+        category: 'Airport',
+        icon: '🔎',
+        tags: ['flight', 'schedule', 'airline'],
+        updated: '2026-04-19',
+        order: 10,
+        url: 'https://bomi87.github.io/Flight_Search/'
+      },
+{
+  id: 'factsheet',
+  name: 'FACT Sheet',
+  description: '공항별 FACT Sheet PDF 조회.',
+  category: 'FAA',
+  icon: '📄',
+  tags: ['faa', 'factsheet', 'airport', 'pdf'],
+  updated: '2026-04-15',
+  order: 7.3,
+  url: 'https://bomi87.github.io/FACTSHEET/'
+},
+
+{
+  id: 'world-fuel-price',
+  name: 'WFS Fuel Search',
+  description: '공항별 FBO 연료 단가와 입력 연료량 기준 총 비용을 조회.',
+  category: 'Fuel',
+  icon: '🛢️',
+  tags: ['fuel', 'wfs', 'fbo', 'price', 'usd', 'krw'],
+  updated: '2026-06-13',
+  order: 3.5,
+  url: 'https://bomi87.github.io/WFS_FUEL/'
+},
+{
+  id: 'awc-metar-taf',
+  name: 'METAR & TAF',
+  description: 'ICAO 공항코드를 입력하면 METAR + TAF 조회 가능.',
+  category: 'WX',
+  icon: '⛅',
+  tags: ['metar', 'taf', 'weather', 'wx'],
+  updated: '2026-04-15',
+  order: 4,
+  action: 'awc-metar-taf'
+},
+      {
+        id: 'past-wx',
+        name: 'Historical WX',
+        description: '시간대별 공항 과거 기상 조회 및 분석.',
+        category: 'WX',
+        icon: '🌦️',
+        tags: ['pastwx', 'weather', 'airport', 'history'],
+        updated: '2026-04-15',
+        order: 5,
+        url: 'https://bomi87.github.io/Past_WX/'
+      },
+{
+  id: 'wx-forecast',
+  name: 'WX_FORECAST',
+  description: '스케줄별 DEP / ARR 공항 예보 분석.\nECMWF → GFS → ICON 우선순위로 조회.',
+  category: 'WX',
+  icon: '📊',
+  tags: ['forecast', 'weather', 'wx', 'schedule'],
+  updated: '2026-06-06',
+  order: 5.05,
+  url: 'https://bomi87.github.io/WX_FORECAST/'
+},
+      {
+  id: 'windy-airport-weather-check',
+  name: 'Windy airport weather check',
+  description: '공항 ICAO, Local Date/Time 기준으로 Windy 예보 조회.',
+  category: 'WX',
+  icon: '<img src="https://bomi87.github.io/WINDY/windy-icon.png" alt="Windy icon" class="tool-custom-icon">',
+  tags: ['windy', 'weather', 'airport', 'wx'],
+  updated: '2026-05-05',
+  order: 5.1,
+  url: 'https://bomi87.github.io/WINDY/'
+},
+{
+  id: 'amos-realtime',
+  name: 'AMOS RealTime',
+  description: 'AMOS Monitoring by Domestic Airport(Korea Aviation Meteorological Office).',
+  category: 'WX',
+  icon: '🌩️',
+  tags: ['amos', 'realtime', 'weather'],
+  updated: '2026-04-24',
+  order: 6,
+  url: 'https://global.amo.go.kr/control/amos.do'
+},
+      {
+  id: 'faa-rvr',
+  name: 'US Airport RVR',
+  description: '미국 공항별 RVR 현황 조회.\n최근 RVR visibility 및 공항별 상태 확인.',
+  category: 'WX',
+  icon: '🌩️',
+  tags: ['faa', 'rvr', 'visibility', 'weather', 'airport'],
+  updated: '2026-04-24',
+  order: 6.1,
+  url: 'https://rvr.data.faa.gov/cgi-bin/rvr-status.pl'
+},
+
+      {
+  id: 'faa-artcc-advisory-map',
+  name: 'FAA ARTCC Advisory Map',
+  description: 'FAA ATCSCC Advisory를 ARTCC 구역 및 영향 공항 기준으로 지도에서 조회.',
+  category: 'FAA',
+ icon: '<img src="https://bomi87.github.io/FAA_ATCSCC/FAA_logo.jpg" alt="FAA ATCSCC logo" class="tool-custom-icon">',
+  tags: ['faa', 'artcc', 'advisory', 'atcscc', 'delay'],
+  updated: '2026-05-09',
+  order: 6.9,
+  url: 'https://bomi87.github.io/FAA_ATCSCC/'
+},
+      {
+        id: 'faa-nas-status',
+        name: 'FAA NAS Status',
+        description: 'FAA National Airspace System status overview.',
+        category: 'FAA',
+        icon: '🚦',
+        tags: ['faa', 'nas', 'status', 'delay'],
+        updated: '2026-04-15',
+        order: 7,
+        url: 'https://nasstatus.faa.gov/'
+      },
+      {
+        id: 'faa-airport-status',
+        name: 'FAA Airport Status',
+        description: 'ICAO 또는 IATA 공항코드를 입력하면 FAA 공항 상태 페이지 오픈.\n(4 LETTER 입력 시 3 LETTER 자동 변환)',
+        category: 'FAA',
+        icon: '⏰',
+        tags: ['faa', 'airport', 'status', 'delay'],
+        updated: '2026-04-15',
+        order: 7.1,
+        action: 'faa-airport-status'
+      },
+ {
+  id: 'faa-cnd-diagram',
+  name: 'FAA CND Diagram',
+  description: 'FAA Construction Notice Diagram 리스트 조회.\n제공 공항 확인 후 Airport Closure/Restriction Graphic PDF 오픈.',
+  category: 'FAA',
+  icon: '🚧',
+  tags: ['faa', 'cnd', 'construction', 'notam', 'diagram', 'airport'],
+  updated: '2026-05-03',
+  order: 7.2,
+  url: 'https://bomi87.github.io/U.S_Airport_Diagram/'
+},
+{
+id: 'hl8080-route',
+name: 'HL8080 Route',
+description: 'HL8080 항공기 Route 및 Tracking.\n(Waypoint detail Click & NDB 버튼 on/off 설정 가능)',
+category: 'Tracking',
+icon: '🛫',
+tags: ['HL8080', 'route', 'tracking'],
+updated: '2026-04-15',
+order: 8,
+url: 'https://bomi87.github.io/FLIGHT_MAP/?file=live/HL8080.kml'
+},
+{
+id: 'hl8372-route',
+name: 'HL8372 Route',
+description: 'HL8372 항공기 Route 및 Tracking.\n(Waypoint detail Click & NDB 버튼 on/off 설정 가능)',
+category: 'Tracking',
+icon: '🛫',
+tags: ['HL8372', 'route', 'tracking'],
+updated: '2026-04-15',
+order: 8.1,
+url: 'https://bomi87.github.io/FLIGHT_MAP/?file=live/HL8372.kml'
+},
+      {
+  id: 'opsgroup-news',
+  name: 'OPSGROUP News',
+  description: 'OPSGROUP latest news grouped by Today, Day Ago, and Days Ago.',
+  category: 'News',
+  icon: '<img src="https://bomi87.github.io/OPS_NEWS/opsgroup_logo.jpg" alt="OPSGROUP News logo" class="tool-custom-icon">',
+  tags: ['ops group', 'news', 'alerts', 'briefing', 'flight ops'],
+  updated: '2026-05-08',
+  order: 10.9,
+  url: 'https://bomi87.github.io/OPS_NEWS/'
+},
+{
+  id: 'ops-group-airport',
+  name: 'OPS GROUP Airport',
+  description: 'ICAO 4 LETTER 공항코드를 입력하면 OPS GROUP 공항별 상세 정보 페이지 오픈.',
+  category: 'News',
+  icon: '🌐',
+  tags: ['ops group', 'airport', 'briefing', 'news', 'flight ops'],
+  updated: '2026-05-03',
+  order: 11,
+  action: 'ops-group-airport'
+},
+      {
+  id: 'ops-group-briefings',
+  name: 'OPS GROUP Briefings',
+  description: 'OPS GROUP 항공 운항 브리핑 및 최신 공역/운항 이슈 확인.',
+  category: 'News',
+  icon: '📰',
+  tags: ['ops group', 'briefing', 'news', 'airspace', 'flight ops'],
+  updated: '2026-05-03',
+  order: 12,
+  url: 'https://ops.group/blog/category/briefings/'
+},
+          {
+        id: 'hospital-search',
+        name: 'Hospital Search',
+        description: '공항 주변 병원 조회.\n(대학병원, 종합병원 우선 조회)',
+        category: 'Medical',
+        icon: '🏥',
+        tags: ['hospital', 'medical', 'search'],
+        updated: '2026-04-15',
+        order: 9,
+        url: 'https://bomi87.github.io/Hospital/'
+      },
+     
+      {
+  id: 'fbo-fee-lookup',
+  name: 'FBO Fee Lookup',
+  description: 'Signature / Atlantic FBO Handling Fee, Minimum Gallon, Special Event Fee 조회.',
+  category: 'Airport',
+  icon: '💰',
+  tags: ['fbo', 'fee', 'handling', 'signature', 'atlantic'],
+  updated: '2026-06-06',
+  order: 10.1,
+  url: 'https://bomi87.github.io/FBO_Fees/'
+},
+{
+  id: 'japan-slot-checker',
+  name: 'Japan Slot Checker',
+  description: '일본 공항 출발·도착 Slot 조회.\n(전체 시간 및 특정 시간 조회)',
+  category: 'Airport',
+  icon: '<img src="https://flagcdn.com/w80/jp.png" alt="Japan flag" class="tool-custom-icon">',
+  tags: ['slot', 'swim', 'japan', 'airport'],
+  updated: '2026-08-03',
+  order: 10.2,
+  url: 'https://bomi87.github.io/JAPAN_SLOT/'
+}
+    ];
+
+    const searchInput = document.getElementById('searchInput');
+ const categorySelect = document.getElementById('categorySelect');
+    const categoryChips = document.getElementById('categoryChips');
+    const toolGrid = document.getElementById('toolGrid');
+    const emptyState = document.getElementById('emptyState');
+    const resultMeta = document.getElementById('resultMeta');
+    const themeToggle = document.getElementById('themeToggle');
+const refreshBtn = document.getElementById('refreshBtn');
+    
+  const FAVORITE_KEY = 'toolPortalFavorites';
+const THEME_KEY = 'toolPortalTheme';
+const ACTIVE_CATEGORY_KEY = 'toolPortalActiveCategory';
+const PORTAL_RETURN_STATE_KEY = 'bomiPortalReturnState';
+
+function savePortalReturnState(toolId) {
+  try {
+    localStorage.setItem(
+      PORTAL_RETURN_STATE_KEY,
+      JSON.stringify({
+        sessionId: CURRENT_PORTAL_SESSION_ID,
+        scrollY: Math.max(
+          0,
+          window.scrollY ||
+          document.documentElement.scrollTop ||
+          0
+        ),
+        category: activeCategory || 'all',
+        toolId: String(toolId || ''),
+        savedAt: Date.now(),
+        returnPending: true
+      })
+    );
+  } catch (err) {
+    console.warn('Portal return state save failed', err);
+  }
+}
+
+function restorePortalReturnState() {
+  try {
+    const raw = localStorage.getItem(PORTAL_RETURN_STATE_KEY);
+    if (!raw) return;
+
+    const state = JSON.parse(raw);
+
+    // 다른 포털 접속 세션의 위치는 복원하지 않습니다.
+    if (
+      !state.returnPending ||
+      !state.sessionId ||
+      state.sessionId !== CURRENT_PORTAL_SESSION_ID
+    ) {
+      localStorage.removeItem(PORTAL_RETURN_STATE_KEY);
+      return;
+    }
+
+    // 1시간이 지난 복귀 정보는 폐기합니다.
+    if (
+      !state.savedAt ||
+      Date.now() - Number(state.savedAt) > 60 * 60 * 1000
+    ) {
+      localStorage.removeItem(PORTAL_RETURN_STATE_KEY);
+      return;
+    }
+
+    if (state.category) {
+      activeCategory = state.category;
+      saveActiveCategory();
+    }
+
+    // 복원된 카테고리를 기준으로 컨트롤과 카드 목록을 다시 만듭니다.
+    populateCategoryControls();
+    renderTools();
+
+    const targetY = Math.max(0, Number(state.scrollY) || 0);
+
+    // 인증 화면 전환 및 카드 레이아웃이 끝난 뒤 스크롤을 복원합니다.
+    setTimeout(function () {
+      window.scrollTo({
+        top: targetY,
+        left: 0,
+        behavior: 'auto'
+      });
+
+      // 한 번 복원한 정보는 다시 사용하지 않습니다.
+      state.returnPending = false;
+      localStorage.setItem(
+        PORTAL_RETURN_STATE_KEY,
+        JSON.stringify(state)
+      );
+    }, 180);
+
+  } catch (err) {
+    localStorage.removeItem(PORTAL_RETURN_STATE_KEY);
+  }
+}
+
+let favorites = loadFavorites();
+let activeCategory = loadActiveCategory();
+let favoritesOnly = false;
+
+function loadActiveCategory() {
+  try {
+    return localStorage.getItem(ACTIVE_CATEGORY_KEY) || 'all';
+  } catch (err) {
+    return 'all';
+  }
+}
+
+function saveActiveCategory() {
+  try {
+    localStorage.setItem(ACTIVE_CATEGORY_KEY, activeCategory);
+  } catch (err) {}
+}
+
+    function loadFavorites() {
+      try { return JSON.parse(localStorage.getItem(FAVORITE_KEY) || '[]'); }
+      catch { return []; }
+    }
+
+    function saveFavorites() {
+      localStorage.setItem(FAVORITE_KEY, JSON.stringify(favorites));
+    }
+
+    function toggleFavorite(id) {
+      if (favorites.includes(id)) favorites = favorites.filter(v => v !== id);
+      else favorites.push(id);
+      saveFavorites();
+      updateStats();
+      renderTools();
+    }
+
+    function setTheme(theme) {
+      document.body.classList.toggle('dark', theme === 'dark');
+      localStorage.setItem(THEME_KEY, theme);
+      themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+    }
+
+    function initTheme() {
+      setTheme(localStorage.getItem(THEME_KEY) || 'light');
+    }
+
+function canAccessTool(tool) {
+  if (!CURRENT_USER || !tool) return false;
+
+  const role = String(CURRENT_USER.role || 'USER').trim().toUpperCase();
+  if (role === 'ADMIN') return true;
+
+  const permissions = Array.isArray(CURRENT_USER.permissions)
+    ? CURRENT_USER.permissions.map(value => String(value).trim()).filter(Boolean)
+    : [];
+
+  if (permissions.includes('*')) return true;
+  return permissions.includes(tool.id);
+}
+
+function categories() {
+  const preferredOrder = ['Prep', 'Crew', 'Airport', 'Fuel', 'WX', 'Tracking', 'FAA', 'News', 'Medical'];
+  const accessibleTools = tools.filter(canAccessTool);
+  const existing = [...new Set(accessibleTools.map(t => t.category))];
+  return preferredOrder.filter(cat => existing.includes(cat));
+}
+  function populateCategoryControls() {
+  const cats = categories();
+
+  if (categorySelect) {
+    categorySelect.innerHTML = '<option value="all">All</option>' +
+      cats.map(cat => `<option value="${cat}">${cat}</option>`).join('');
   }
 
-  wrap.innerHTML = "";
+if (activeCategory !== 'all' && !cats.includes(activeCategory)) {
+  activeCategory = 'all';
+  saveActiveCategory();
+}
 
-  const buttonWidth = Math.max(
-    240,
-    Math.min(300, window.innerWidth - 80)
-  );
+categoryChips.innerHTML = [
+  `<button class="chip ${activeCategory === 'all' ? 'active' : ''}" data-category="all">All</button>`,
+  ...cats.map(cat => `
+    <button class="chip ${activeCategory === cat ? 'active' : ''}" data-category="${cat}">
+      ${cat}
+    </button>
+  `)
+].join('');
 
-  google.accounts.id.renderButton(
-    wrap,
-    {
-      theme: "outline",
-      size: "large",
-      width: buttonWidth,
-      text: "continue_with",
-      shape: "pill"
+if (categorySelect) {
+  categorySelect.value = activeCategory;
+}
+
+  categoryChips.querySelectorAll('.chip').forEach(chip => {
+   chip.addEventListener('click', () => {
+  activeCategory = chip.dataset.category;
+  saveActiveCategory();
+
+  if (categorySelect) {
+    categorySelect.value = activeCategory;
+  }
+
+  updateActiveChips();
+  renderTools();
+});
+  });
+}
+
+    function updateActiveChips() {
+      categoryChips.querySelectorAll('.chip').forEach(chip => {
+        chip.classList.toggle('active', chip.dataset.category === activeCategory);
+      });
     }
-  );
+function filteredTools() {
+  const q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+  return tools.filter(tool => {
+    const matchPermission = canAccessTool(tool);
+    const matchCategory = activeCategory === 'all' || tool.category === activeCategory;
+    const matchSearch = !q || [tool.name, tool.description, tool.category, ...(tool.tags || [])]
+      .join(' ').toLowerCase().includes(q);
+    const matchFavorites = !favoritesOnly || favorites.includes(tool.id);
+
+    return matchPermission && matchCategory && matchSearch && matchFavorites;
+  });
+}
+
+    function renderTools() {
+      const items = filteredTools();
+      const sorted = [...items].sort((a, b) => {
+        const af = favorites.includes(a.id) ? 1 : 0;
+        const bf = favorites.includes(b.id) ? 1 : 0;
+        return bf - af || (a.order || 999) - (b.order || 999) || a.name.localeCompare(b.name);
+      });
+
+      toolGrid.innerHTML = sorted.map(tool => {
+        const isFav = favorites.includes(tool.id);
+        return `
+          <article class="tool-card">
+            <div class="tool-top">
+              <div class="icon">${tool.icon || '🧩'}</div>
+              <button class="fav-btn" onclick="toggleFavorite('${tool.id}')" title="즐겨찾기">${isFav ? '⭐' : '☆'}</button>
+            </div>
+            <div>
+              <h3 class="tool-title">${tool.name}</h3>
+              <div class="tool-desc">${tool.description}</div>
+              <div class="badges">
+                <span class="badge category">${tool.category}</span>
+                ${(tool.tags || []).map(tag => `<span class="badge">#${tag}</span>`).join('')}
+              </div>
+            </div>
+            <div class="tool-footer">
+              <a class="btn btn-primary" href="#" onclick="openTool(event, '${tool.id}')" target="_blank" rel="noopener noreferrer">Open</a>
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      emptyState.style.display = sorted.length ? 'none' : 'block';
+      resultMeta.textContent = `${sorted.length} items`;
+    }
+
+    function updateStats() {
+    }
+
+    function getFaaAirportStatusUrl(inputCode) {
+      const code = String(inputCode || '').trim().toUpperCase();
+
+      if (!code) {
+        throw new Error('공항코드가 비어있습니다.');
+      }
+
+      if (/^[A-Z]{3}$/.test(code)) {
+        return `https://www.fly.faa.gov/fly/flyfaa/flyfaaindex?ARPT=${encodeURIComponent(code)}&p=1`;
+      }
+
+      if (/^[A-Z]{4}$/.test(code)) {
+        const iata = ICAO_TO_IATA[code];
+        if (!iata) {
+          throw new Error('해당 4 LETTER 코드의 3 LETTER 매핑이 없습니다.');
+        }
+        return `https://www.fly.faa.gov/fly/flyfaa/flyfaaindex?ARPT=${encodeURIComponent(iata)}&p=1`;
+      }
+
+      throw new Error('3 또는 4 LETTER 공항코드를 입력해줘.');
+    }
+ 
+function getAwcMetarTafUrl(inputCode) {
+  const raw = String(inputCode || '').toUpperCase().trim();
+
+  if (!raw) {
+    throw new Error('ICAO 코드를 입력해줘.');
+  }
+
+  const codes = raw
+    .split(/[\s,]+/)
+    .map(v => v.trim())
+    .filter(Boolean);
+
+  if (!codes.length) {
+    throw new Error('유효한 ICAO 코드가 없습니다.');
+  }
+
+  const invalid = codes.filter(code => !/^[A-Z]{4}$/.test(code));
+  if (invalid.length) {
+   throw new Error('4 LETTER ICAO 코드만 입력. 예: RKSI');
+  }
+
+  return `https://aviationweather.gov/data/metar/?ids=${encodeURIComponent(codes.join(','))}&taf=1`;
+}
+function getAtisGuruUrl(inputCode) {
+  const code = String(inputCode || '').trim().toUpperCase();
+
+  if (!code) {
+    throw new Error('ICAO 코드를 입력해줘.');
+  }
+
+  if (!/^[A-Z]{4}$/.test(code)) {
+    throw new Error('4 LETTER ICAO 코드만 입력. 예: RKSI');
+  }
+
+  return `https://atis.guru/atis/${encodeURIComponent(code)}`;
+}
+
+    function getOpsgroupAirportUrl(inputCode) {
+  const code = String(inputCode || '').trim().toUpperCase();
+
+  if (!code) {
+    throw new Error('ICAO 코드를 입력해줘.');
+  }
+
+  if (!/^[A-Z]{4}$/.test(code)) {
+    throw new Error('4 LETTER ICAO 코드만 입력. 예: KEWR');
+  }
+
+  return `https://ops.group/dashboard/search-everything/results-airport/?icao=${encodeURIComponent(code)}`;
+}
+
+function getAtisGuruDataUrl(inputCode) {
+  const code = String(inputCode || '').trim().toUpperCase();
+
+  if (!code) {
+    throw new Error('ICAO 코드를 입력해줘.');
+  }
+
+  if (!/^[A-Z]{4}$/.test(code)) {
+   throw new Error('4 LETTER ICAO 코드만 입력. 예: RKSI');
+  }
+
+  if (!ATIS_PROXY_URL || ATIS_PROXY_URL.includes('여기에_Apps_Script_Web_App_URL_입력')) {
+    throw new Error('ATIS_PROXY_URL에 Apps Script Web App URL을 먼저 입력해야 해.');
+  }
+
+  return `${ATIS_PROXY_URL}?icao=${encodeURIComponent(code)}`;
 }
 
 
-/* =========================================================
-   Apps Script 승인 확인
-========================================================= */
+function getNavCanadaAeroViewUrl(inputCode) {
+  const code = String(inputCode || '').trim().toUpperCase();
 
+  if (!/^CY[A-Z0-9]{2}$/.test(code)) {
+    return '';
+  }
 
-function portalLogCachedAccess(user, appId) {
-  try {
-    const normalizedAppId = String(appId || "").trim();
+  return 'https://spaces.navcanada.ca/workspace/aeroview/' + encodeURIComponent(code);
+}
 
-    if (!normalizedAppId || normalizedAppId === "portal") {
-      return;
+function showLoading(message, desc) {
+  const overlay = document.getElementById('loadingOverlay');
+  const titleEl = document.getElementById('loadingTitle');
+  const descEl = document.getElementById('loadingDesc');
+
+  if (titleEl) titleEl.textContent = message || 'Data 조회 중...';
+  if (descEl) descEl.textContent = desc || '잠시만 기다려 주세요.';
+
+  if (overlay) {
+    overlay.classList.add('show');
+    overlay.setAttribute('aria-hidden', 'false');
+  }
+}
+
+function hideLoading() {
+  const overlay = document.getElementById('loadingOverlay');
+
+  if (overlay) {
+    overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden', 'true');
+  }
+}
+
+async function fetchAtisGuruData(inputCode) {
+  const url = getAtisGuruDataUrl(inputCode);
+  const res = await fetch(url, { method: 'GET', cache: 'no-store' });
+
+  if (!res.ok) {
+    throw new Error(`ATIS 데이터 조회 실패. HTTP ${res.status}`);
+  }
+
+  const data = await res.json();
+  if (!data.ok) {
+    throw new Error(data.error || 'ATIS 데이터 조회 실패.');
+  }
+
+  return data;
+}
+
+const ATIS_PHONE_BOOK = {
+  RKSI: [
+    { label: 'ATIS Call', raw: '+82-32-743-2676' }
+  ],
+  RKSS: [
+    { label: 'ATIS Call', raw: '+82-2-2660-2676' }
+  ],
+  RKPC: [
+    { label: 'ATIS Call', raw: '+82-64-797-2676' }
+  ],
+
+  // AirNav ATIS PHONE / ATIS PHONE NR / ATIS PHONE NUMBER
+  // 번호가 여러 개인 공항은 대표번호 1개만 사용
+  KATL: [
+    { label: 'ARR ATIS Call', raw: '+1-404-763-7988' }
+  ],
+  KSFO: [
+    { label: 'ATIS Call', raw: '+1-650-821-0677' }
+  ],
+  KLGB: [
+    { label: 'ATIS Call', raw: '+1-562-608-4144' }
+  ],
+  KTCM: [
+    { label: 'ATIS Call', raw: '+1-253-982-2847' }
+  ],
+  KNTU: [
+    { label: 'ATIS Call', raw: '+1-757-433-2377' }
+  ],
+  KVBG: [
+    { label: 'ATIS Call', raw: '+1-805-605-2847' }
+  ],
+  KTIK: [
+    { label: 'ATIS Call', raw: '+1-405-734-5152' }
+  ],
+  KGUS: [
+    { label: 'ATIS Call', raw: '+1-765-688-2293' }
+  ],
+
+  VHHH: [
+    { label: 'ARR ATIS Call', raw: '+852-3141-2820' },
+    { label: 'DEP ATIS Call', raw: '+852-3141-2705' }
+  ],
+  WSSS: [
+    { label: 'ATIS Call', raw: '+65-6214-3915' }
+  ],
+  VOBL: [
+    { label: 'ATIS Call', raw: '+91-80-2201-9936' }
+  ],
+  EDSB: [
+    { label: 'ATIS Call', raw: '+49-7229-53222332' }
+  ]
+};
+
+function getLiveAtcSearchUrl(icao) {
+  const code = String(icao || '').trim().toUpperCase();
+
+  if (!/^[A-Z]{4}$/.test(code)) {
+    return '';
+  }
+
+  return `https://www.liveatc.net/search/?icao=${encodeURIComponent(code)}`;
+}
+
+function digitsOnly(s) {
+  return String(s || '').replace(/\D/g, '');
+}
+
+function makeAtisDialNumber(icao, rawNumber) {
+  const code = String(icao || '').trim().toUpperCase();
+  let digits = digitsOnly(rawNumber);
+
+  // 대한민국: +82 제거 후 앞에 0
+  // RK 계열 공항이면 한국 국내번호로 발신
+  if (code.startsWith('RK')) {
+    if (digits.startsWith('82')) {
+      digits = '0' + digits.slice(2);
+    } else if (!digits.startsWith('0')) {
+      digits = '0' + digits;
+    }
+    return digits;
+  }
+
+  // 해외: 앞에 00700 추가
+  if (!digits.startsWith('00700')) {
+    digits = '00700' + digits;
+  }
+
+  return digits;
+}
+
+function createAtisPhoneButton(item, icao) {
+  const dialNumber = makeAtisDialNumber(icao, item.raw);
+
+  const button = document.createElement('button');
+  button.className = 'atis-phone-btn';
+  button.type = 'button';
+  button.textContent = '📞 ' + item.label;
+  button.title = dialNumber;
+
+  button.addEventListener('click', function () {
+    window.location.href = 'tel:' + dialNumber;
+  });
+
+  return button;
+}
+
+function renderLiveAtcActions(data) {
+  const box = document.getElementById('atisLiveAtcActions');
+  if (!box) return;
+
+  box.innerHTML = '';
+  box.style.display = 'none';
+
+  const icao = String(data && data.icao ? data.icao : '').trim().toUpperCase();
+
+  const phoneItems = ATIS_PHONE_BOOK[icao] || [];
+  const phoneGroup = document.createElement('div');
+  phoneGroup.className = 'atis-phone-group';
+
+  phoneItems.forEach(function (item) {
+    phoneGroup.appendChild(createAtisPhoneButton(item, icao));
+  });
+
+  const live = data && data.liveAtc ? data.liveAtc : {};
+  const url = live.searchUrl || getLiveAtcSearchUrl(icao);
+
+  const liveAtcGroup = document.createElement('div');
+  liveAtcGroup.className = 'atis-liveatc-group';
+
+  if (url) {
+    const liveButton = document.createElement('button');
+    liveButton.className = 'liveatc-btn';
+    liveButton.type = 'button';
+    liveButton.textContent = live.buttonLabel || '🎧 LiveATC ATIS / APP-DEP';
+    liveButton.addEventListener('click', function () {
+      openExternalUrl(url, 'atis-guru');
+    });
+
+    liveAtcGroup.appendChild(liveButton);
+  }
+
+  // 캐나다 공항 모달이 표시되는 경우를 대비한 AeroView 바로가기 버튼
+  const navCanadaUrl = getNavCanadaAeroViewUrl(icao);
+  if (navCanadaUrl) {
+    const navCanadaButton = document.createElement('button');
+    navCanadaButton.className = 'liveatc-btn secondary';
+    navCanadaButton.type = 'button';
+    navCanadaButton.textContent = '🇨🇦 NAV CANADA AeroView';
+    navCanadaButton.title = navCanadaUrl;
+    navCanadaButton.addEventListener('click', function () {
+      openExternalUrl(navCanadaUrl, 'atis-guru');
+    });
+
+    liveAtcGroup.appendChild(navCanadaButton);
+  }
+
+  if (phoneGroup.children.length) {
+    box.appendChild(phoneGroup);
+  }
+
+  if (liveAtcGroup.children.length) {
+    box.appendChild(liveAtcGroup);
+  }
+
+  if (box.children.length) {
+    box.style.display = 'flex';
+  }
+}
+function showAtisResultModal(data) {
+  const modal = document.getElementById('atisResultModal');
+  const title = document.getElementById('atisResultTitle');
+  const body = document.getElementById('atisResultBody');
+  const closeBtn = document.getElementById('atisResultClose');
+
+  title.textContent = `${data.icao || ''} ATIS`;
+
+  const parts = [];
+
+  // 1순위: 새 구조 atisBlocks 표시
+  // ARR/DEP/COMBINED 강제분류 대신, Apps Script가 추출한 ATIS 블록을 그대로 표시
+if (Array.isArray(data.atisBlocks) && data.atisBlocks.length) {
+  data.atisBlocks.forEach(block => {
+    if (!block) return;
+
+    const label = block.label || 'CURRENT ATIS';
+    const text = block.text || '';
+
+    if (text) {
+      parts.push(
+        `${label}
+${text}`.trim()
+      );
+    }
+  });
+}
+
+  // 2순위: 구버전 호환용 combined / arrival / departure
+  // atisBlocks가 없을 때만 사용
+  if (!Array.isArray(data.atisBlocks) || !data.atisBlocks.length) {
+   if (data.combined && data.combined.text) {
+  parts.push(
+    `COMBINED ARR/DEP ATIS
+${data.combined.text || ''}`.trim()
+  );
+}
+
+    if (!data.combined || !data.combined.text) {
+     if (data.arrival && data.arrival.text) {
+  parts.push(
+    `ARRIVAL ATIS
+${data.arrival.text || ''}`.trim()
+  );
+}
+
+   if (data.departure && data.departure.text) {
+  parts.push(
+    `DEPARTURE ATIS
+${data.departure.text || ''}`.trim()
+  );
+}
+    }
+  }
+
+  if (data.metar) {
+    parts.push(`METAR\n${data.metar}`.trim());
+  }
+
+  if (data.taf) {
+    parts.push(`TAF\n${data.taf}`.trim());
+  }
+
+  body.textContent = parts.length
+    ? parts.join('\n\n------------------------------\n\n')
+    : (data.error || '표시할 ATIS 데이터가 없습니다.');
+
+  renderLiveAtcActions(data);
+
+  function close() {
+    modal.style.display = 'none';
+    const liveAtcBox = document.getElementById('atisLiveAtcActions');
+    if (liveAtcBox) {
+      liveAtcBox.innerHTML = '';
+      liveAtcBox.style.display = 'none';
+    }
+    closeBtn.removeEventListener('click', close);
+  }
+
+  closeBtn.addEventListener('click', close);
+  modal.style.display = 'flex';
+}
+
+function askAirportCode(title = 'Airport Code Input', desc = 'ICAO 또는 IATA 공항코드를 입력해줘.') {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('airportCodeModal');
+    const input = document.getElementById('airportCodeInput');
+    const okBtn = document.getElementById('airportCodeOk');
+    const cancelBtn = document.getElementById('airportCodeCancel');
+    const titleEl = document.getElementById('airportCodeModalTitle');
+    const descEl = document.getElementById('airportCodeModalDesc');
+
+    function onInput() {
+      input.value = input.value.toUpperCase();
     }
 
-    const sessionKey =
-      "portalAppLogged:" +
-      CURRENT_PORTAL_SESSION_ID +
-      ":" +
-      normalizedAppId;
-
-    if (sessionStorage.getItem(sessionKey) === "true") {
-      return;
+    function cleanup() {
+      input.removeEventListener('input', onInput);
+      input.removeEventListener('keydown', onKeydown);
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      modal.removeEventListener('click', onBackdrop);
     }
 
-    sessionStorage.setItem(sessionKey, "true");
+    function close(value) {
+      modal.style.display = 'none';
+      input.value = '';
+      cleanup();
+      resolve(value);
+    }
 
-    fetch(
-      PORTAL_AUTH_CONFIG.AUTH_SCRIPT_URL,
-      {
-        method: "POST",
-        keepalive: true,
-        body: JSON.stringify({
-          mode: "SESSION_APP_UPDATE",
-          sessionId: CURRENT_PORTAL_SESSION_ID,
-          email: user && user.email ? user.email : "",
-          role: user && user.role ? user.role : "",
-          name: user && user.name ? user.name : "",
-          appId: normalizedAppId
-        })
+    function onOk() {
+      close(input.value.trim().toUpperCase());
+    }
+
+    function onCancel() {
+      close(null);
+    }
+
+    function onBackdrop(e) {
+      if (e.target === modal) close(null);
+    }
+
+    function onKeydown(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        onOk();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onCancel();
       }
-    ).catch(function () {
+    }
+
+    titleEl.textContent = title;
+    descEl.textContent = desc;
+
+    modal.style.display = 'flex';
+    input.value = '';
+    setTimeout(() => input.focus(), 0);
+
+    input.addEventListener('input', onInput);
+    input.addEventListener('keydown', onKeydown);
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    modal.addEventListener('click', onBackdrop);
+  });
+}
+
+   if (searchInput) {
+  searchInput.addEventListener('input', renderTools);
+}
+   if (categorySelect) {
+ categorySelect.addEventListener('change', () => {
+  activeCategory = categorySelect.value;
+  saveActiveCategory();
+
+  updateActiveChips();
+  renderTools();
+});
+}
+
+    themeToggle.addEventListener('click', () => {
+      setTheme(document.body.classList.contains('dark') ? 'light' : 'dark');
+    });
+refreshBtn.addEventListener("click", function () {
+  savePortalReturnState();
+  refreshPortalPermissions();
+});
+   populateCategoryControls();
+initTheme();
+updateStats();
+renderTools();
+
+window.addEventListener("load", function () {
+  showInAppBrowserNotice();
+  initGoogleAuth();
+});
+
+
+// 인증 모듈이 비정상적으로 오래 걸리는 경우 로그인 화면을 표시합니다.
+setTimeout(function () {
+  if (!AUTH_READY && !GOOGLE_AUTH_IN_PROGRESS && !PORTAL_SESSION_AUTH_IN_PROGRESS &&
+      document.documentElement.classList.contains("portal-auth-pending")) {
+    const authScreen = document.getElementById("authScreen");
+    const portalApp = document.getElementById("portalApp");
+
+    if (portalApp) portalApp.style.display = "none";
+    if (authScreen) authScreen.style.display = "flex";
+
+    finishPortalAuthRender();
+    showManualLogin("Google 로그인 확인이 지연되고 있습니다. 아래 버튼으로 접속해 주세요.");
+  }
+}, 15000);
+
+
+    window.toggleFavorite = toggleFavorite;
+
+
+
+function logToolAccessFromPortal(toolId) {
+  try {
+    const normalizedToolId = String(toolId || '').trim();
+
+    if (
+      !normalizedToolId ||
+      !CURRENT_USER ||
+      !CURRENT_USER.email
+    ) {
+      return;
+    }
+
+    // 같은 포털 접속 세션에서 동일 앱은 브라우저에서 한 번만 전송합니다.
+    // 백엔드에서도 AccessedApps 중복을 제거하므로 재전송되어도 행이 늘어나지 않습니다.
+    const sessionKey =
+      'portalAppLogged:' +
+      CURRENT_PORTAL_SESSION_ID +
+      ':' +
+      normalizedToolId;
+
+    if (sessionStorage.getItem(sessionKey) === 'true') {
+      return;
+    }
+
+    sessionStorage.setItem(sessionKey, 'true');
+
+    fetch(AUTH_SCRIPT_URL, {
+      method: 'POST',
+      keepalive: true,
+      body: JSON.stringify({
+        mode: 'SESSION_APP_UPDATE',
+        sessionId: CURRENT_PORTAL_SESSION_ID,
+        email: CURRENT_USER.email || '',
+        role: CURRENT_USER.role || '',
+        name: CURRENT_USER.name || '',
+        appId: normalizedToolId
+      })
+    }).catch(function () {
       sessionStorage.removeItem(sessionKey);
     });
 
   } catch (err) {
-    console.warn("세션 요약 전송 실패", err);
+    console.warn('Tool summary update failed', err);
   }
 }
 
-async function portalCheckApproval(idToken, appId) {
-  const res = await fetch(
-    PORTAL_AUTH_CONFIG.AUTH_SCRIPT_URL,
-    {
-      method: "POST",
-      body: JSON.stringify({
-        idToken: idToken,
-        appId: appId,
-        sessionId: CURRENT_PORTAL_SESSION_ID
-      })
+function addPortalSessionToUrl(url) {
+  try {
+    const parsed = new URL(url, window.location.href);
+
+    // common-auth.js를 사용하는 동일 GitHub Pages 앱에만 세션 ID 전달
+    if (parsed.hostname === 'bomi87.github.io') {
+      parsed.searchParams.set(
+        'portalSessionId',
+        CURRENT_PORTAL_SESSION_ID
+      );
+      parsed.searchParams.set('fromPortal', '1');
+
+      // 서명된 세션은 URL fragment로 전달합니다.
+      // fragment는 GitHub 서버나 Referrer 헤더로 전송되지 않습니다.
+      const portalSessionToken = loadPortalSessionToken();
+      if (portalSessionToken) {
+        const fragmentParams = new URLSearchParams(
+          parsed.hash ? parsed.hash.slice(1) : ''
+        );
+        fragmentParams.set('portalSessionToken', portalSessionToken);
+        parsed.hash = fragmentParams.toString();
+      }
     }
-  );
 
-  if (!res.ok) {
-    throw new Error(
-      "승인 서버 응답 오류 HTTP " + res.status
-    );
+    return parsed.href;
+  } catch (err) {
+    return url;
   }
-
-  return await res.json();
 }
 
+function openExternalUrl(url, toolId) {
+  savePortalReturnState(toolId);
 
-async function portalCheckSignedSession(portalSessionToken, appId) {
-  const res = await fetch(
-    PORTAL_AUTH_CONFIG.AUTH_SCRIPT_URL,
-    {
-      method: "POST",
-      body: JSON.stringify({
-        mode: "PORTAL_SESSION_AUTH",
-        portalSessionToken: portalSessionToken,
-        appId: appId,
-        sessionId: CURRENT_PORTAL_SESSION_ID
-      })
-    }
-  );
+  const targetUrl = addPortalSessionToUrl(url);
+  const newWindow = window.open(targetUrl, '_blank');
 
-  if (!res.ok) {
-    throw new Error(
-      "포털 세션 확인 오류 HTTP " + res.status
-    );
+  // 모바일 또는 팝업 차단 시 현재 창으로 이동합니다.
+  // 뒤로가기로 돌아오면 저장한 카테고리와 스크롤 위치를 복원합니다.
+  if (
+    !newWindow ||
+    newWindow.closed ||
+    typeof newWindow.closed === 'undefined'
+  ) {
+    window.location.href = targetUrl;
+    return;
   }
 
-  return await res.json();
+  newWindow.opener = null;
 }
 
+   async function openTool(event, toolId) {
+  event.preventDefault();
 
-/* =========================================================
-   Google 로그인 결과
-========================================================= */
+  const tool = tools.find(t => t.id === toolId);
+  if (!tool) return;
 
-async function portalHandleCredentialResponse(response) {
-  const appId = portalGetCurrentAppId();
+  // 화면 우회 호출 방지: 현재 사용자에게 허용된 앱인지 다시 확인
+  if (!canAccessTool(tool)) {
+    alert('이 프로그램에 대한 접근 권한이 없습니다.');
+    return;
+  }
+
+  // 실제로 선택한 프로그램의 AppId를 기록
+  // 같은 브라우저 세션에서 동일 앱은 한 번만 전송
+  logToolAccessFromPortal(tool.id);
 
   try {
-    if (!appId) {
-      portalShowDenied(
-        "이 앱의 권한 ID가 common-auth.js에 등록되지 않았습니다."
-      );
-      return;
+   if (tool.action === 'faa-airport-status') {
+  const code = await askAirportCode(
+    'FAA Airport Status',
+    'ICAO 또는 IATA 미국공항 코드 입력.'
+  );
+  if (!code) return;
+
+  const url = getFaaAirportStatusUrl(code);
+  openExternalUrl(url, tool.id);
+  return;
+}
+
+if (tool.action === 'atis-guru') {
+  const code = await askAirportCode(
+    'D-ATIS',
+    'ICAO 4 LETTER 공항코드 입력. 예: RKSI'
+  );
+  if (!code) return;
+
+  const airportCode = String(code).trim().toUpperCase();
+
+  // 캐나다 공항은 ATIS 모달/프록시 조회 없이 NAV CANADA AeroView로 바로 이동
+  const navCanadaUrl = getNavCanadaAeroViewUrl(airportCode);
+  if (navCanadaUrl) {
+    openExternalUrl(navCanadaUrl, tool.id);
+    return;
+  }
+
+  showLoading('Data 조회 중...', `${airportCode} D-ATIS 데이터를 불러오는 중입니다.`);
+  try {
+    const data = await fetchAtisGuruData(airportCode);
+    showAtisResultModal(data);
+  } finally {
+    hideLoading();
+  }
+  return;
+}
+
+if (tool.action === 'awc-metar-taf') {
+  const code = await askAirportCode(
+    'METAR & TAF',
+    'ICAO 4 LETTER 공항코드 입력.(여러 공항 조회 가능)'
+  );
+  if (!code) return;
+
+  const url = getAwcMetarTafUrl(code);
+  openExternalUrl(url, tool.id);
+  return;
+}
+    if (tool.action === 'ops-group-airport') {
+  const code = await askAirportCode(
+    'OPS GROUP Airport',
+    'ICAO 4 LETTER 공항코드 입력. 예: KEWR'
+  );
+  if (!code) return;
+
+  const url = getOpsgroupAirportUrl(code);
+  openExternalUrl(url, tool.id);
+  return;
+}
+    if (tool.url) {
+      openExternalUrl(tool.url, tool.id);
     }
-
-    if (!response || !response.credential) {
-      portalShowDenied(
-        "Google 로그인 정보를 가져오지 못했습니다."
-      );
-      return;
-    }
-
-    const result = await portalCheckApproval(
-      response.credential,
-      appId
-    );
-
-    if (result.ok === true) {
-      result.permissions =
-        portalNormalizePermissions(result.permissions);
-
-      portalSaveTakeoffToken(result.portalSessionToken, result.sessionExpiresAt);
-
-      portalShowApp(result, appId);
-      return;
-    }
-
-    localStorage.removeItem(PORTAL_AUTH_CONFIG.CACHE_KEY);
-
-    let message =
-      "승인되지 않은 계정입니다.<br>" +
-      "관리자 승인 후 사용 가능합니다.";
-
-    if (result.reason === "APP_NOT_ALLOWED") {
-      message =
-        "승인된 계정이지만 이 앱에 대한 권한이 없습니다.<br>" +
-        "관리자에게 앱 권한을 요청해 주세요.";
-    }
-
-    portalShowDenied(
-      message +
-      (result.email
-        ? "<br>계정: " + result.email
-        : "")
-    );
-
   } catch (err) {
     console.error(err);
-
-    portalShowDenied(
-      "승인 확인 중 오류가 발생했습니다. 다시 시도해 주세요."
-    );
+    alert(err.message || '실행 중 오류 발생.');
   }
 }
 
+    window.openTool = openTool;
+  </script>
 
-/* =========================================================
-   인증 화면 초기 상태
-========================================================= */
+<div id="airportCodeModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:9999; align-items:center; justify-content:center; padding:16px;">
+  <div style="width:100%; max-width:460px; background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); padding:20px;">
+    <div id="airportCodeModalTitle" style="font-size:18px; font-weight:800; margin-bottom:10px;">
+      Airport Code Input
+    </div>
 
-function portalPrepareAuthScreen() {
-  const authScreen = document.getElementById("authScreen");
+    <div id="airportCodeModalDesc" style="font-size:14px; color:var(--muted); line-height:1.5; margin-bottom:14px;">
+      ICAO 또는 IATA 공항코드 입력.
+    </div>
 
-  if (!authScreen) return;
+    <input
+      id="airportCodeInput"
+      type="text"
+   
+      autocomplete="off"
+      inputmode="text"
+      autocapitalize="characters"
+      spellcheck="false"
+     
+      style="width:100%; height:48px; border:1px solid var(--line); background:var(--panel); color:var(--text); border-radius:12px; padding:0 14px; outline:none; text-transform:uppercase; font-size:16px !important; line-height:20px; -webkit-appearance:none; appearance:none;"
+    />
 
-  authScreen.style.display = "flex";
-
-  if (!authScreen.innerHTML.trim()) {
-    authScreen.textContent = "승인 확인 중...";
-  }
-}
-
-
-/* =========================================================
-   인증 시작
-
-   핵심:
-   - 유효한 공통 캐시가 있고 현재 앱 권한이 있으면 즉시 앱 표시
-   - 따라서 앱 이동/포털 복귀 때 Google 승인 팝업이 반복되지 않음
-   - 캐시가 없거나 만료된 경우에만 Google 로그인 실행
-========================================================= */
-
-async function startPortalAuth() {
-  const appId = portalGetCurrentAppId();
-
-  if (!appId) {
-    portalShowDenied(
-      "이 앱의 권한 ID가 common-auth.js에 등록되지 않았습니다."
-    );
-    return;
-  }
-
-  // 이미 검증된 공통 캐시가 있으면 네트워크 대기 없이 즉시 표시합니다.
-  const cachedUser = portalLoadAuthCache();
-  const isFlightRouteApp = appId === 'hl8080-route' || appId === 'hl8372-route';
-
-  if (
-    cachedUser &&
-    portalCanAccessApp(cachedUser, appId)
-  ) {
-    if (isFlightRouteApp) portalVerifyTakeoffTokenInBackground(appId);
-    portalShowApp(cachedUser, appId);
-    portalLogCachedAccess(cachedUser, appId);
-    return;
-  }
-
-  if (
-    cachedUser &&
-    !portalCanAccessApp(cachedUser, appId)
-  ) {
-    portalShowDenied(
-      [
-        "이 앱에 대한 사용 권한이 없습니다.",
-        "관리자에게 앱 권한을 요청해 주세요.",
-        cachedUser.email ? "계정: " + cachedUser.email : ""
-      ]
-        .filter(Boolean)
-        .join("<br>")
-    );
-    return;
-  }
-
-  // 포털에서 정상적으로 연 앱은 서명 세션으로 먼저 승인합니다.
-  // 성공하면 Google 로그인 화면을 다시 표시하지 않습니다.
-  if (
-    PORTAL_SIGNED_SESSION_TOKEN &&
-    !PORTAL_SESSION_CHECK_STARTED
-  ) {
-    PORTAL_SESSION_CHECK_STARTED = true;
-
-    try {
-      const sessionResult = await portalCheckSignedSession(
-        PORTAL_SIGNED_SESSION_TOKEN,
-        appId
-      );
-
-      if (sessionResult.ok === true) {
-        sessionResult.permissions =
-          portalNormalizePermissions(sessionResult.permissions);
-
-        portalSaveTakeoffToken(PORTAL_SIGNED_SESSION_TOKEN, sessionResult.sessionExpiresAt);
-
-        portalShowApp(sessionResult, appId);
-        return;
-      }
-
-      if (
-        sessionResult.reason === "APP_NOT_ALLOWED" ||
-        sessionResult.reason === "NOT_APPROVED"
-      ) {
-        portalShowDenied(
-          sessionResult.reason === "APP_NOT_ALLOWED"
-            ? "이 앱에 대한 사용 권한이 없습니다.<br>관리자에게 앱 권한을 요청해 주세요."
-            : "승인되지 않은 계정입니다."
-        );
-        return;
-      }
-    } catch (err) {
-      console.warn("포털 서명 세션 확인 실패", err);
-    }
-  }
-
-  portalPrepareAuthScreen();
-
-  if (
-    !window.google ||
-    !google.accounts ||
-    !google.accounts.id
-  ) {
-    setTimeout(startPortalAuth, 300);
-    return;
-  }
-
-  if (PORTAL_AUTH_STARTED) return;
-
-  PORTAL_AUTH_STARTED = true;
-
-  google.accounts.id.initialize({
-    client_id: PORTAL_AUTH_CONFIG.GOOGLE_CLIENT_ID,
-    callback: portalHandleCredentialResponse,
-    auto_select: true,
-    cancel_on_tap_outside: false
-  });
-
-  google.accounts.id.prompt(function (notification) {
-    if (
-      notification.isNotDisplayed() ||
-      notification.isSkippedMoment() ||
-      notification.isDismissedMoment()
-    ) {
-      renderPortalGoogleButton();
-    }
-  });
-}
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+      <button id="airportCodeCancel" class="btn btn-soft" type="button">취소</button>
+      <button id="airportCodeOk" class="btn btn-primary" type="button">확인</button>
+    </div>
+  </div>
+</div>
 
 
-/* =========================================================
-   시작
 
-   기존 앱에서 sessionStorage만 보고 먼저 실행하는 것을 방지하기 위해
-   common-auth.js가 로드되는 즉시 현재 앱 승인값을 초기화합니다.
-   인증 성공 후 현재 APP ID로 다시 저장됩니다.
-========================================================= */
+<div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
+  <div class="loading-box" role="status" aria-live="polite">
+    <div class="loading-spinner"></div>
+    <div id="loadingTitle" class="loading-title">Data 조회 중...</div>
+    <div id="loadingDesc" class="loading-desc">잠시만 기다려 주세요.</div>
+  </div>
+</div>
 
-portalClearSessionApproval();
+<div id="atisResultModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:9999; align-items:center; justify-content:center; padding:16px;">
+  <div style="width:100%; max-width:720px; background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); padding:20px;">
+    <div id="atisResultTitle" style="font-size:18px; font-weight:800; margin-bottom:12px;">
+      ATIS Result
+    </div>
 
-if (document.readyState === "loading") {
-  window.addEventListener("DOMContentLoaded", startPortalAuth);
-} else {
-  startPortalAuth();
-}
+    <div id="atisResultBody" class="atis-result-body"></div>
+    <div id="atisLiveAtcActions" class="liveatc-actions"></div>
 
-
-// 인증 모듈 또는 네트워크가 지연되더라도 흰 화면으로 영구 정지하지 않습니다.
-setTimeout(function () {
-  if (document.documentElement.classList.contains("portal-auth-pending")) {
-    portalShowDenied(
-      "로그인 확인이 지연되고 있습니다.<br>아래 버튼으로 다시 접속해 주세요."
-    );
-  }
-}, 8000);
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+      <button id="atisResultClose" class="btn btn-primary" type="button">닫기</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
