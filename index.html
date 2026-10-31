@@ -3058,8 +3058,22 @@ function logToolAccessFromPortal(toolId) {
       return;
     }
 
-    // 같은 포털 접속 세션에서 동일 앱은 브라우저에서 한 번만 전송합니다.
-    // 백엔드에서도 AccessedApps 중복을 제거하므로 재전송되어도 행이 늘어나지 않습니다.
+    // 접속 기록 제외 계정
+    const excludedEmails = [
+      'sktsbyu@gmail.com',
+      'sbyu87@gmail.com'
+    ];
+
+    const currentEmail = String(CURRENT_USER.email || '')
+      .trim()
+      .toLowerCase();
+
+    // 해당 계정은 접속 기록을 전송하지 않음
+    if (excludedEmails.includes(currentEmail)) {
+      return;
+    }
+
+    // 같은 포털 세션에서 동일 앱은 한 번만 기록
     const sessionKey =
       'portalAppLogged:' +
       CURRENT_PORTAL_SESSION_ID +
@@ -3091,7 +3105,6 @@ function logToolAccessFromPortal(toolId) {
     console.warn('Tool summary update failed', err);
   }
 }
-
 function addPortalSessionToUrl(url) {
   try {
     const parsed = new URL(url, window.location.href);
