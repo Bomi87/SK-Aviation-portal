@@ -4,6 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>BOMI Operations Portal</title>
+  <!-- 24시간 승인 캐시가 유효하면 첫 화면 페인트 전에 로그인 화면을 숨깁니다. -->
+  <script>
+    (function () {
+      try {
+        const raw = localStorage.getItem('bomiPortalAuthCacheV3');
+        if (!raw) return;
+        const user = JSON.parse(raw);
+        const role = String(user.role || 'USER').toUpperCase();
+        if (user.email && Number(user.expiresAt) > Date.now() &&
+            (role === 'ADMIN' || Array.isArray(user.permissions))) {
+          document.documentElement.classList.add('portal-valid-auth-cache');
+        }
+      } catch (err) { /* 기존 인증 로직에서 캐시 상태를 처리합니다. */ }
+    })();
+  </script>
 
   <!-- 홈 화면 Safari 바로가기 아이콘 설정 -->
   <meta name="theme-color" content="#2563eb">
@@ -800,6 +815,11 @@
       visibility: visible !important;
     }
 
+    /* 유효한 로그인 캐시가 있는 복귀 화면에서 흰색 로그인 카드 노출 방지. */
+    html.portal-valid-auth-cache #authScreen {
+      display: none !important;
+    }
+
     html.portal-auth-pending #portalApp {
       visibility: hidden !important;
     }
@@ -1070,6 +1090,7 @@ function setAuthStatus(message) {
     }
 
 function showManualLogin(message) {
+  document.documentElement.classList.remove("portal-valid-auth-cache");
   finishPortalAuthRender();
   const btn = document.getElementById("manualLoginBtn");
   const googleButtonWrap = document.getElementById("googleButtonWrap");
@@ -1136,6 +1157,7 @@ function showPortal(user) {
 
       if (authScreen) authScreen.style.display = "none";
       if (portalApp) portalApp.style.display = "block";
+      document.documentElement.classList.remove("portal-valid-auth-cache");
 
       // 복귀 위치가 정해지기 전까지 인증 대기 화면 상태를 유지합니다.
 
@@ -1164,6 +1186,7 @@ function showPortal(user) {
     }
 
     function denyPortal(result) {
+      document.documentElement.classList.remove("portal-valid-auth-cache");
       clearAuthCache();
 
       const authScreen = document.getElementById("authScreen");
