@@ -4,21 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>BOMI Operations Portal</title>
-  <!-- 24시간 승인 캐시가 유효하면 첫 화면 페인트 전에 로그인 화면을 숨깁니다. -->
-  <script>
-    (function () {
-      try {
-        const raw = localStorage.getItem('bomiPortalAuthCacheV3');
-        if (!raw) return;
-        const user = JSON.parse(raw);
-        const role = String(user.role || 'USER').toUpperCase();
-        if (user.email && Number(user.expiresAt) > Date.now() &&
-            (role === 'ADMIN' || Array.isArray(user.permissions))) {
-          document.documentElement.classList.add('portal-valid-auth-cache');
-        }
-      } catch (err) { /* 기존 인증 로직에서 캐시 상태를 처리합니다. */ }
-    })();
-  </script>
 
   <!-- 홈 화면 Safari 바로가기 아이콘 설정 -->
   <meta name="theme-color" content="#2563eb">
@@ -27,7 +12,6 @@
   <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
-  <link rel="preconnect" href="https://accounts.google.com" crossorigin>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     :root {
@@ -809,18 +793,9 @@
   }
 }
 
-    /* 인증 중에는 로그인 안내 화면을 바로 표시합니다.
-       포털 본문은 승인 전까지 숨겨 화면 깜박임을 방지합니다. */
+    /* 인증 결과가 나오기 전에는 로그인 화면과 포털을 모두 숨깁니다.
+       모바일에서 authScreen → portalApp 전환이 보이는 깜박임 방지용입니다. */
     html.portal-auth-pending body {
-      visibility: visible !important;
-    }
-
-    /* 유효한 로그인 캐시가 있는 복귀 화면에서 흰색 로그인 카드 노출 방지. */
-    html.portal-valid-auth-cache #authScreen {
-      display: none !important;
-    }
-
-    html.portal-auth-pending #portalApp {
       visibility: hidden !important;
     }
 
@@ -889,8 +864,6 @@
 
     let CURRENT_USER = null;
     let AUTH_READY = false;
-    let GOOGLE_AUTH_IN_PROGRESS = false;
-    let PORTAL_SESSION_AUTH_IN_PROGRESS = false;
 
     // 승인 성공 기록을 브라우저에 저장해서 다음 접속부터 빠르게 포털 표시
     // common-auth.js와 동일한 캐시 키를 사용합니다.
@@ -1089,33 +1062,39 @@ function setAuthStatus(message) {
       if (el) el.textContent = message || "";
     }
 
-// Google GIS 버튼은 같은 컨테이너에 한 번만 렌더링합니다.
-// 모바일에서 버튼 iframe이 반복 교체되며 인증 선택 화면이 재시작되는 것을 방지합니다.
-let portalGoogleButtonRendered = false;
 function showManualLogin(message) {
-  if (AUTH_READY) return;
-  document.documentElement.classList.remove("portal-valid-auth-cache");
   finishPortalAuthRender();
   const btn = document.getElementById("manualLoginBtn");
   const googleButtonWrap = document.getElementById("googleButtonWrap");
-  if (message) setAuthStatus(message);
 
-  if (window.google && google.accounts && google.accounts.id && googleButtonWrap && portalAuthBooted) {
-    if (btn) btn.style.display = "none";
+  if (btn) btn.style.display = "none";
+
+  if (message) {
+    setAuthStatus(message);
+  }
+
+  if (
+    window.google &&
+    google.accounts &&
+    google.accounts.id &&
+    googleButtonWrap
+  ) {
     googleButtonWrap.style.display = "block";
-    if (!portalGoogleButtonRendered || !googleButtonWrap.firstElementChild) {
-      const buttonWidth = Math.max(240, Math.min(300, window.innerWidth - 80));
-      google.accounts.id.renderButton(googleButtonWrap, {
+    googleButtonWrap.innerHTML = "";
+
+    const buttonWidth = Math.max(240, Math.min(300, window.innerWidth - 80));
+
+    google.accounts.id.renderButton(
+      googleButtonWrap,
+      {
         theme: document.body.classList.contains("dark") ? "filled_black" : "outline",
         size: "large",
         width: buttonWidth,
         text: "continue_with",
         shape: "pill"
-      });
-      portalGoogleButtonRendered = true;
-    }
+      }
+    );
   } else {
-    if (googleButtonWrap) googleButtonWrap.style.display = "none";
     if (btn) btn.style.display = "inline-flex";
   }
 }
@@ -1150,9 +1129,8 @@ function showPortal(user) {
 
       if (authScreen) authScreen.style.display = "none";
       if (portalApp) portalApp.style.display = "block";
-      document.documentElement.classList.remove("portal-valid-auth-cache");
 
-      // 복귀 위치가 정해지기 전까지 인증 대기 화면 상태를 유지합니다.
+      finishPortalAuthRender();
 
       if (userPill && user) {
         const role = String(user.role || "USER").toUpperCase();
@@ -1175,11 +1153,9 @@ function showPortal(user) {
       }
 
       restorePortalReturnState();
-      finishPortalAuthRender();
     }
 
     function denyPortal(result) {
-      document.documentElement.classList.remove("portal-valid-auth-cache");
       clearAuthCache();
 
       const authScreen = document.getElementById("authScreen");
@@ -1202,27 +1178,10 @@ function showPortal(user) {
       } else if (reason === "EMAIL_NOT_VERIFIED") {
         message = "Google 이메일 인증이 완료되지 않은 계정입니다.";
       } else if (reason === "SERVER_ERROR") {
-        message = "승인 서버 오류 [SERVER_ERROR]. Apps Script 설정을 확인해 주세요.";
-      } else if (reason === "TOKEN_VERIFY_FAILED" || reason === "TOKEN_VERIFY_ERROR") {
-        message = "Google 인증 토큰 검증 실패 [" + reason + "]. 다시 시도해 주세요.";
-      } else if (reason === "NO_ID_TOKEN") {
-        message = "Google 인증 정보가 전달되지 않았습니다 [NO_ID_TOKEN].";
-      } else if (reason && /^[A-Z_]+$/.test(String(reason))) {
-        message = "승인 확인 실패 [" + reason + "]. 관리자에게 문의해 주세요.";
+        message = "승인 서버 오류입니다. Apps Script 설정을 확인해 주세요.";
       }
 
       showManualLogin(message);
-    }
-
-    // 진단 정보에는 Google ID 토큰·이메일·세션 토큰을 기록하지 않습니다.
-    let portalAuthLastStage = "INIT";
-    function portalAuthErrorCode(error) {
-      if (error && error.name === "AbortError") return "REQUEST_ABORTED";
-      if (error && error instanceof TypeError) return "NETWORK_OR_CORS";
-      if (error && /^승인 서버 응답 오류 HTTP /.test(String(error.message || ""))) {
-        return "SERVER_HTTP_" + String(error.message).replace(/\D/g, "").slice(0, 3);
-      }
-      return "AUTH_REQUEST_ERROR";
     }
 
     async function checkPortalApproval(idToken) {
@@ -1491,12 +1450,8 @@ function showPortal(user) {
     }
 
     async function handleCredentialResponse(response) {
-      // 이미 승인 확인 중이면 중복 Google 콜백을 처리하지 않습니다.
-      if (GOOGLE_AUTH_IN_PROGRESS) return;
-      GOOGLE_AUTH_IN_PROGRESS = true;
       try {
         if (!response || !response.credential) {
-          portalAuthLastStage = "NO_GOOGLE_CREDENTIAL";
           closePermissionLoginModal();
           finishPermissionRefresh();
 
@@ -1506,14 +1461,12 @@ function showPortal(user) {
           return;
         }
 
-        portalAuthLastStage = "GOOGLE_CREDENTIAL_RECEIVED";
         savePortalIdToken(response.credential);
 
         if (!AUTH_READY) {
           setAuthStatus("승인 목록 확인 중...");
         }
 
-        portalAuthLastStage = "BACKEND_VERIFYING";
         const result = await checkPortalApproval(response.credential);
 
         if (result.ok === true) {
@@ -1526,10 +1479,6 @@ function showPortal(user) {
 
         closePermissionLoginModal();
         finishPermissionRefresh();
-        // 서버가 반환한 원인 코드만 표시합니다 (개인정보와 토큰 제외).
-        if (result && result.reason) {
-          console.warn("Portal auth denied, reason:", String(result.reason));
-        }
         denyPortal(result);
 
       } catch (err) {
@@ -1539,12 +1488,8 @@ function showPortal(user) {
 
         // 이미 캐시로 포털에 들어간 상태면 일시적 서버 오류 때문에 화면을 막지 않음
         if (!AUTH_READY) {
-          const code = portalAuthErrorCode(err);
-          console.warn("Portal auth failed:", portalAuthLastStage, code);
-          showManualLogin("인증 확인 실패 [" + code + "]. 다시 시도해 주세요.");
+          showManualLogin("승인 확인 중 오류가 발생했습니다. 다시 접속해 주세요.");
         }
-      } finally {
-        GOOGLE_AUTH_IN_PROGRESS = false;
       }
     }
 
@@ -1553,15 +1498,13 @@ function showPortal(user) {
       const validPortalSessionToken = loadPortalSessionToken();
 
       // 캐시가 있으면 포털 즉시 표시 + 접속 로그 기록
-      if (cachedUser && !AUTH_READY) {
+      if (cachedUser) {
         showPortal(cachedUser);
       }
 
       // 1시간 캐시는 만료됐지만 서명 세션이 유효하면,
       // Google 창을 띄우지 않고 백엔드에서 최신 권한만 자동 확인합니다.
       if (!cachedUser && validPortalSessionToken) {
-        setAuthStatus("기존 로그인 세션 확인 중...");
-        PORTAL_SESSION_AUTH_IN_PROGRESS = true;
         try {
           const sessionResult = await checkSavedPortalSession(
             validPortalSessionToken
@@ -1583,8 +1526,6 @@ function showPortal(user) {
           localStorage.removeItem(PORTAL_SESSION_TOKEN_KEY);
         } catch (err) {
           console.warn("Saved portal session check failed", err);
-        } finally {
-          PORTAL_SESSION_AUTH_IN_PROGRESS = false;
         }
       }
 
@@ -1592,12 +1533,6 @@ function showPortal(user) {
 
       if (manualBtn) {
         manualBtn.addEventListener("click", function () {
-          // 모바일에서 Google SDK가 늦게 준비된 경우 초기화를 재시도합니다.
-          if (typeof bootPortalGoogleAuth === "function") bootPortalGoogleAuth();
-          if (!portalAuthBooted) {
-            setAuthStatus("Google 로그인 모듈을 불러오는 중입니다. 잠시 후 다시 눌러 주세요.");
-            return;
-          }
           showManualLogin("Google 버튼을 눌러 접속해 주세요.");
         });
       }
@@ -1614,8 +1549,7 @@ function showPortal(user) {
       google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
         callback: handleCredentialResponse,
-        // 24시간 만료 시 명시적인 로그인 버튼만 사용하며 자동 재선택을 피합니다.
-        auto_select: false,
+        auto_select: true,
         cancel_on_tap_outside: false
       });
 
@@ -1626,10 +1560,19 @@ function showPortal(user) {
         return;
       }
 
-      // 캐시와 서버 서명 세션이 모두 만료되면 One Tap과 수동 버튼을
-      // 연이어 표시하지 않고 Google 로그인 버튼 한 개만 보여줍니다.
-      // 사용자가 선택하면 기존 handleCredentialResponse에서 인증합니다.
-      showManualLogin("아래 Google 버튼으로 계정을 선택해 주세요.");
+      // 최초 로그인(캐시 및 유효한 서명 세션이 없는 경우)에만 One Tap 표시
+      google.accounts.id.prompt(function (notification) {
+        // 인증 성공 후 도착한 이전 One Tap 알림은 무시합니다.
+        if (AUTH_READY) return;
+        if (
+          notification.isSkippedMoment() ||
+          notification.isDismissedMoment()
+        ) {
+          if (!cachedUser) {
+            showManualLogin("자동 확인이 안 되면 아래 Google 버튼으로 접속해 주세요.");
+          }
+        }
+      });
     }
 
     const ICAO_TO_IATA = {
@@ -2413,20 +2356,21 @@ function restorePortalReturnState() {
 
     const targetY = Math.max(0, Number(state.scrollY) || 0);
 
-    // 포털이 화면에 보이기 전에 저장된 스크롤 위치를 복원합니다.
-    // 180ms 뒤에 화면이 움직이던 깜빡임을 방지합니다.
-    window.scrollTo({
-      top: targetY,
-      left: 0,
-      behavior: 'instant'
-    });
+    // 인증 화면 전환 및 카드 레이아웃이 끝난 뒤 스크롤을 복원합니다.
+    setTimeout(function () {
+      window.scrollTo({
+        top: targetY,
+        left: 0,
+        behavior: 'auto'
+      });
 
-    // 한 번 복원한 정보는 다시 사용하지 않습니다.
-    state.returnPending = false;
-    localStorage.setItem(
-      PORTAL_RETURN_STATE_KEY,
-      JSON.stringify(state)
-    );
+      // 한 번 복원한 정보는 다시 사용하지 않습니다.
+      state.returnPending = false;
+      localStorage.setItem(
+        PORTAL_RETURN_STATE_KEY,
+        JSON.stringify(state)
+      );
+    }, 180);
 
   } catch (err) {
     localStorage.removeItem(PORTAL_RETURN_STATE_KEY);
@@ -3078,50 +3022,15 @@ initTheme();
 updateStats();
 renderTools();
 
-// 페이지의 이미지 등 모든 리소스 로딩을 기다리지 않고 인증 준비를 시작합니다.
-// Google Identity Services는 async로 로딩되므로, 준비 완료 뒤 한 번만 초기화합니다.
-let portalAuthBooted = false;
-let portalGoogleReadyWatch = null;
-function bootPortalGoogleAuth() {
-  if (portalAuthBooted) return;
-  if (!window.google || !google.accounts || !google.accounts.id) return;
-  portalAuthBooted = true;
-  if (portalGoogleReadyWatch) {
-    clearInterval(portalGoogleReadyWatch);
-    portalGoogleReadyWatch = null;
-  }
-  initGoogleAuth();
-}
-function startPortalAuthEarly() {
+window.addEventListener("load", function () {
   showInAppBrowserNotice();
-  // 이미 유효한 24시간 캐시가 있으면 Google 스크립트와 무관하게 즉시 화면 표시
-  const userFromCache = loadAuthCache();
-  if (userFromCache && !AUTH_READY) showPortal(userFromCache);
-
-  bootPortalGoogleAuth();
-  if (portalAuthBooted) return;
-  // Google 스크립트가 뒤늦게 로드되어도 최초 로그인 절차가 누락되지 않도록 합니다.
-  portalGoogleReadyWatch = setInterval(bootPortalGoogleAuth, 150);
-  window.setTimeout(function () {
-    if (!portalAuthBooted && !AUTH_READY) {
-      // 단말이 느려도 폴링을 중단하지 않아 SDK 로드 완료 후 정상 초기화됩니다.
-      setAuthStatus("Google 로그인 모듈 연결이 지연되고 있습니다.");
-      finishPortalAuthRender();
-    }
-  }, 15000);
-}
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", startPortalAuthEarly, { once: true });
-} else {
-  startPortalAuthEarly();
-}
+  initGoogleAuth();
+});
 
 
 // 인증 모듈이 비정상적으로 오래 걸리는 경우 로그인 화면을 표시합니다.
 setTimeout(function () {
-  if (!AUTH_READY && !GOOGLE_AUTH_IN_PROGRESS && !PORTAL_SESSION_AUTH_IN_PROGRESS &&
-      portalAuthBooted &&
-      document.documentElement.classList.contains("portal-auth-pending")) {
+  if (document.documentElement.classList.contains("portal-auth-pending")) {
     const authScreen = document.getElementById("authScreen");
     const portalApp = document.getElementById("portalApp");
 
@@ -3131,7 +3040,7 @@ setTimeout(function () {
     finishPortalAuthRender();
     showManualLogin("Google 로그인 확인이 지연되고 있습니다. 아래 버튼으로 접속해 주세요.");
   }
-}, 15000);
+}, 5000);
 
 
     window.toggleFavorite = toggleFavorite;
