@@ -1089,42 +1089,33 @@ function setAuthStatus(message) {
       if (el) el.textContent = message || "";
     }
 
+// Google GIS 버튼은 같은 컨테이너에 한 번만 렌더링합니다.
+// 모바일에서 버튼 iframe이 반복 교체되며 인증 선택 화면이 재시작되는 것을 방지합니다.
+let portalGoogleButtonRendered = false;
 function showManualLogin(message) {
-  // 이미 승인된 포털 위에 로그인 화면이 다시 나타나지 않도록 합니다.
   if (AUTH_READY) return;
   document.documentElement.classList.remove("portal-valid-auth-cache");
   finishPortalAuthRender();
   const btn = document.getElementById("manualLoginBtn");
   const googleButtonWrap = document.getElementById("googleButtonWrap");
+  if (message) setAuthStatus(message);
 
-  if (btn) btn.style.display = "none";
-
-  if (message) {
-    setAuthStatus(message);
-  }
-
-  if (
-    window.google &&
-    google.accounts &&
-    google.accounts.id &&
-    googleButtonWrap
-  ) {
+  if (window.google && google.accounts && google.accounts.id && googleButtonWrap && portalAuthBooted) {
+    if (btn) btn.style.display = "none";
     googleButtonWrap.style.display = "block";
-    googleButtonWrap.innerHTML = "";
-
-    const buttonWidth = Math.max(240, Math.min(300, window.innerWidth - 80));
-
-    google.accounts.id.renderButton(
-      googleButtonWrap,
-      {
+    if (!portalGoogleButtonRendered || !googleButtonWrap.firstElementChild) {
+      const buttonWidth = Math.max(240, Math.min(300, window.innerWidth - 80));
+      google.accounts.id.renderButton(googleButtonWrap, {
         theme: document.body.classList.contains("dark") ? "filled_black" : "outline",
         size: "large",
         width: buttonWidth,
         text: "continue_with",
         shape: "pill"
-      }
-    );
+      });
+      portalGoogleButtonRendered = true;
+    }
   } else {
+    if (googleButtonWrap) googleButtonWrap.style.display = "none";
     if (btn) btn.style.display = "inline-flex";
   }
 }
@@ -1211,10 +1202,27 @@ function showPortal(user) {
       } else if (reason === "EMAIL_NOT_VERIFIED") {
         message = "Google 이메일 인증이 완료되지 않은 계정입니다.";
       } else if (reason === "SERVER_ERROR") {
-        message = "승인 서버 오류입니다. Apps Script 설정을 확인해 주세요.";
+        message = "승인 서버 오류 [SERVER_ERROR]. Apps Script 설정을 확인해 주세요.";
+      } else if (reason === "TOKEN_VERIFY_FAILED" || reason === "TOKEN_VERIFY_ERROR") {
+        message = "Google 인증 토큰 검증 실패 [" + reason + "]. 다시 시도해 주세요.";
+      } else if (reason === "NO_ID_TOKEN") {
+        message = "Google 인증 정보가 전달되지 않았습니다 [NO_ID_TOKEN].";
+      } else if (reason && /^[A-Z_]+$/.test(String(reason))) {
+        message = "승인 확인 실패 [" + reason + "]. 관리자에게 문의해 주세요.";
       }
 
       showManualLogin(message);
+    }
+
+    // 진단 정보에는 Google ID 토큰·이메일·세션 토큰을 기록하지 않습니다.
+    let portalAuthLastStage = "INIT";
+    function portalAuthErrorCode(error) {
+      if (error && error.name === "AbortError") return "REQUEST_ABORTED";
+      if (error && error instanceof TypeError) return "NETWORK_OR_CORS";
+      if (error && /^승인 서버 응답 오류 HTTP /.test(String(error.message || ""))) {
+        return "SERVER_HTTP_" + String(error.message).replace(/\D/g, "").slice(0, 3);
+      }
+      return "AUTH_REQUEST_ERROR";
     }
 
     async function checkPortalApproval(idToken) {
@@ -1488,6 +1496,7 @@ function showPortal(user) {
       GOOGLE_AUTH_IN_PROGRESS = true;
       try {
         if (!response || !response.credential) {
+          portalAuthLastStage = "NO_GOOGLE_CREDENTIAL";
           closePermissionLoginModal();
           finishPermissionRefresh();
 
@@ -1497,12 +1506,14 @@ function showPortal(user) {
           return;
         }
 
+        portalAuthLastStage = "GOOGLE_CREDENTIAL_RECEIVED";
         savePortalIdToken(response.credential);
 
         if (!AUTH_READY) {
           setAuthStatus("승인 목록 확인 중...");
         }
 
+        portalAuthLastStage = "BACKEND_VERIFYING";
         const result = await checkPortalApproval(response.credential);
 
         if (result.ok === true) {
@@ -1515,6 +1526,10 @@ function showPortal(user) {
 
         closePermissionLoginModal();
         finishPermissionRefresh();
+        // 서버가 반환한 원인 코드만 표시합니다 (개인정보와 토큰 제외).
+        if (result && result.reason) {
+          console.warn("Portal auth denied, reason:", String(result.reason));
+        }
         denyPortal(result);
 
       } catch (err) {
@@ -1524,7 +1539,9 @@ function showPortal(user) {
 
         // 이미 캐시로 포털에 들어간 상태면 일시적 서버 오류 때문에 화면을 막지 않음
         if (!AUTH_READY) {
-          showManualLogin("승인 확인 중 오류가 발생했습니다. 다시 접속해 주세요.");
+          const code = portalAuthErrorCode(err);
+          console.warn("Portal auth failed:", portalAuthLastStage, code);
+          showManualLogin("인증 확인 실패 [" + code + "]. 다시 시도해 주세요.");
         }
       } finally {
         GOOGLE_AUTH_IN_PROGRESS = false;
