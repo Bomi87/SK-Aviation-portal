@@ -1090,6 +1090,8 @@ function setAuthStatus(message) {
     }
 
 function showManualLogin(message) {
+  // 이미 승인된 포털 위에 로그인 화면이 다시 나타나지 않도록 합니다.
+  if (AUTH_READY) return;
   document.documentElement.classList.remove("portal-valid-auth-cache");
   finishPortalAuthRender();
   const btn = document.getElementById("manualLoginBtn");
@@ -1573,6 +1575,12 @@ function showPortal(user) {
 
       if (manualBtn) {
         manualBtn.addEventListener("click", function () {
+          // 모바일에서 Google SDK가 늦게 준비된 경우 초기화를 재시도합니다.
+          if (typeof bootPortalGoogleAuth === "function") bootPortalGoogleAuth();
+          if (!portalAuthBooted) {
+            setAuthStatus("Google 로그인 모듈을 불러오는 중입니다. 잠시 후 다시 눌러 주세요.");
+            return;
+          }
           showManualLogin("Google 버튼을 눌러 접속해 주세요.");
         });
       }
@@ -1589,7 +1597,8 @@ function showPortal(user) {
       google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
         callback: handleCredentialResponse,
-        auto_select: true,
+        // 24시간 만료 시 명시적인 로그인 버튼만 사용하며 자동 재선택을 피합니다.
+        auto_select: false,
         cancel_on_tap_outside: false
       });
 
@@ -3077,10 +3086,10 @@ function startPortalAuthEarly() {
   // Google 스크립트가 뒤늦게 로드되어도 최초 로그인 절차가 누락되지 않도록 합니다.
   portalGoogleReadyWatch = setInterval(bootPortalGoogleAuth, 150);
   window.setTimeout(function () {
-    if (!portalAuthBooted && portalGoogleReadyWatch) {
-      clearInterval(portalGoogleReadyWatch);
-      portalGoogleReadyWatch = null;
-      showManualLogin("Google 로그인 모듈을 불러오지 못했습니다. 새로고침해 주세요.");
+    if (!portalAuthBooted && !AUTH_READY) {
+      // 단말이 느려도 폴링을 중단하지 않아 SDK 로드 완료 후 정상 초기화됩니다.
+      setAuthStatus("Google 로그인 모듈 연결이 지연되고 있습니다.");
+      finishPortalAuthRender();
     }
   }, 15000);
 }
@@ -3094,6 +3103,7 @@ if (document.readyState === "loading") {
 // 인증 모듈이 비정상적으로 오래 걸리는 경우 로그인 화면을 표시합니다.
 setTimeout(function () {
   if (!AUTH_READY && !GOOGLE_AUTH_IN_PROGRESS && !PORTAL_SESSION_AUTH_IN_PROGRESS &&
+      portalAuthBooted &&
       document.documentElement.classList.contains("portal-auth-pending")) {
     const authScreen = document.getElementById("authScreen");
     const portalApp = document.getElementById("portalApp");
